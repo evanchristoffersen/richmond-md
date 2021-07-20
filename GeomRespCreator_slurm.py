@@ -9,86 +9,57 @@ Python Version: 3.9.2
 
 Update Log:
 
-Thank you for the update log. I removed your updates (don't worry
-they're still saved in an earlier version) as I reveiwed them. Seriously
-awesome job. I've addressed a few of your notes below, and then included
-a big update on what I've been up to after that.
+-- Notes and Questions --
+Does the job type 1 simultaneously submit the .pbs files for geomery optimization
+and the resp fitting? I'm pretty sure this needs to be changed.
 
-Addressing previous notes:
+#SBATCH --account=appquantchem   ### Account to bill eeds to be added to the
+top of the .pbs files. I once had an issue with this not being in the file, so
+it should be added now.
 
-    "I noticed that esp.sh creates a.out, but this script doesn't create
-    it.  Nick's guide states this file is important. Something that
-    needs to be considered."
+The each conformer .pbs file needs to create a scratch directory and .chk file
 
-        esp.sh is used in conjunction with a.out (which is an executable
-        compiled from readit.f) to create the _esp.dat files and
-        concatenate them into espot. This functionality has been
-        incorporated into this program so we don't need to worry about
-        esp.sh, readit.f, or a.out. Specifically, the function
-        write_esp_dat() should handle all of this now.
 
-    "Added code to the job = 2 section that properly formats the file
-    that is created in this section. The file is formatted correctly,
-    but the values in the file may not be correct; these need to be
-    checked. Also need to look into what d0 means in fortran. In
-    readit.f, unit = 0.529177249d0. I am not sure d0 needs to be
-    incorporated into the script."
+KJ response: maybe have two versions of the program--one that is lightly
+    commented and the other be more heavily commented? I think the commenting
+    style you chose (commenting on the function of each block instead the
+    function of each individual line) is sufficient and allows us toe move
+    forward with this.
 
-        I am not sure what d0 means either. I used "diff" to check all
-        50000 lines of numbers in the esp.dat file for GLM1 and GLM2 for
-        Nick's code versus this python code when I used unit =
-        0.529177249 (no d0 at the end) and I got all correct values. My
-        guess is d0 is a fortran number formatting thing and we don't
-        have to worry about it.
+-- What has been done --
+Attempted to run the program and resolved errors that were encountered along
+the way. Only minor errors (mostly syntax) were encountered.
 
-    "Something can probably be added to def read_namelist(filename) to
-    extract and set the three letters that name/describe the conformer
-    (e.g. GLD) to a variable that can be used on this line. This is
-    probably a very quick thing to do."
+On line 612, write_geom_input() requires 2 additional arguments (nodes and
+memory). I temporartly added two additional arguments so I could proceed with
+debugging the program. These temporary place holders need to be changed.
 
-        This is already incorporated into the read_namelist() function.
-        See these two lines of code just before and just after job type
-        1 in the main program: namelist = read_namelist('namelist.in')
-        resname = namelist[0]["resname"] Here I saved the three letter
-        residue code as "resname"
+Added code so there are two empty lines in the .inp files. I can't remember if
+there should be 1 or 2 empty lines
 
-Evan's Updates for week of 2021.06.28:
+Adsjuted the spacing between columns in geom.inp and resp.inp files to match
+the spacing of files that I have successfully ran on Talapas
 
-I cleaned up the code to abide by PEP8 and PEP257 standards and best
-practices since it's starting to get pretty long, and best practices
-were designed to make reading and editing code as easy as possible.
-Major changes include:
-    - Enforced line length of no more than 79 characters (you can set
-      whatever editor you use to do this automatically)
-    - All functions and variables are defined using all lowercase and
-      underscores
-    - Comments occur on lines before code, not on the same line as the
-      code.  Additionally, commenting has been reduced to remove clutter
-      - this may be a mistake, but I'm curious to hear your opinion.
+Program now successfully submits all geomery optimization jobs to Talaps,
+except for conformer0--this needs to be corrected
 
-I added better documentation for the functions. This way a user can call
-help(function_name) and see what the function does, what parameters it
-requires, and what the function returns. It also helps us remember what
-the different functions are for without having to reinterpret the code.
 
-I improved error messages. Messages are now more concise, and rather
-than using sys.exit(), the program is more gracefully exited by Raising
-an Exception or built in Error.
+-- Next steps --
+With the same starting files I used, assure the output files exactly match
+the files that were produced when I ran the program. I think it is a good idea
+to do this for each stage of the debugging process.
 
-Removed your FormatCoordMat() and spacing() functions. The format()
-command built into python accomplishes formatting of columns of data
-with correct spacing without the need to declare any additional
-functions.
+Assure the resp files that are created by the program exactly match the files that
+are created by Nick's program.
 
-Heavily edited your fortranFormat() function. It didn't properly handle 
-the distinction between -0.0 and +0.0. Negative zero and positive zero 
-are two distinctly different values, but both are equal to zero. So they 
-need to be handled exclusively and explicitly, as they are distinct 
-despite the fact that if you type into a python terminal -0 == +0, it 
-will return True.
+With the short tail tail version of SDS, assure the Python and Nick's program
+create exactly the same files. Even--I have already run some of the jobs, so I
+need to give you the files, if I haven't already.
 
-Separated actual program code from function declarations using the
-standard: 'if __name__="__main__": '
+
+
+
+
 
 COMPLETED: JOB TYPE 1 Job type 1 should be ready to go. It needs a test
 set of files to confirm that everything is written properly. This data
@@ -107,9 +78,9 @@ the resp fit files, functions were defined that write most of the files
 from scratch:
 
         write_esp_dat() : makes the _esp.dat files and concatenates them
-        into espot 
+        into espot
 
-        write_resp_in() : makes the resp.in files - UNFINISHED 
+        write_resp_in() : makes the resp.in files - UNFINISHED
 
         check_convergence() : checks to see if the resp fitting has
         finished by automatically checking the punch file
@@ -129,27 +100,8 @@ from scratch:
     open babel on Talapas, which probably isn't possible. This will save
     us from having to write a function to build .mol2 files from
     scratch, hopefully. .mol2 files seem very complicated, and I imagine
-    even if we got a function working that we wrote to convert .xyz to 
+    even if we got a function working that we wrote to convert .xyz to
     .mol2, it would be buggy and likely not stand the test of time.
-
-JOB TYPE 4 isn't real.
-
-Wise Words From Konnor: Complete job type 2 section. Once completed, run
-Nick's and the python scripts on at least two molecules. It seems like
-GLM makes a good candidate for this test. Compare the files using the
-bash "diff" command to insure that Nick's code has been correctly
-translated into python. 
-
-TO DO:
-
-1. Test job type 1.
-
-2. Test all file creation functions & finish up the few that are
-unfinished.
-
-3. Figure out the workflow for job types 2 and 3, since some steps have
-to be checked by a human and can't be automated.
-
 """
 
 
@@ -160,7 +112,7 @@ to be checked by a human and can't be automated.
 
 import glob # File selection wildcard *
 import os # Change directories and prevent file overwrite
-import re # Regular expressions (i.e. grep) 
+import re # Regular expressions (i.e. grep)
 import shutil # Move files between directories
 import subprocess as sp # Run shell commands
 import sys # Error management
@@ -178,22 +130,22 @@ def read_namelist(f="namelist.in"):
     function does NOT check that "namelist.in" is properly formatted, so
     double check formatting before use.
 
-    PARAMETERS 
-    ---------- 
+    PARAMETERS
+    ----------
     f : string The path/filename containing the data to be imported.
         Defaults to "namelist.in" if no argument is given.
 
-    RETURNS 
-    ------- 
+    RETURNS
+    -------
     params : dictionary
         Contains the different job parameters, i.e.:
-        [0] = job type, 
+        [0] = job type,
         [1] = number of conformers,
         [2] = number of atoms,
         [3] = charge
         [4] = multiplicity
         [5] = 3 letter residue prefix
-    confnames : list 
+    confnames : list
         Contains the conformer names.
 
     """
@@ -201,20 +153,20 @@ def read_namelist(f="namelist.in"):
     if os.path.isfile(f) is not True:
         raise FileNotFoundError('File {} is missing!\n'.format(f))
 
-    # Opens namelist.in and appends each line to a list while stripping newline
-    # "\n" characters
+    # Opens namelist.in and appends each line to a list while stripping
+    # newline "\n" characters
     namelist=[]
     with open(f, 'r') as file:
         for line in file:
             namelist.append(line.strip('\n'))
 
-    # Makes a separate list for just the conformer names and removes all empty
-    # items from the list of conformer names
+    # Makes a separate list for just the conformer names and removes all
+    # empty items from the list of conformer names
     confnames = namelist[12:]
     confnames[:] = [x for x in confnames if x]
 
-    # Renames the first element to "jobtype" and creates a dictionary for the
-    # different parameters
+    # Renames the first element to "jobtype" and creates a dictionary 
+    # for the different parameters
     namelist=[x.replace(namelist[0], 'jobtype') for x in namelist]
     del namelist[12:]
     params=dict(zip(namelist[::2], namelist[1::2]))
@@ -235,7 +187,7 @@ def write_geom_input(f,resname,conf,chrg,mult,nodes,mem):
     conf : string
         Three letter residue prefix + integer (conformer index number)
     chrg : integer
-        Molecular charge 
+        Molecular charge
     mult : integer
         Molecular multiplicity
     nodes : integer
@@ -248,16 +200,16 @@ def write_geom_input(f,resname,conf,chrg,mult,nodes,mem):
     if os.path.isfile(f) is True:
         raise Exception('File {} already exists!\n'.format(f))
 
-    # Writes a new file (the "conformer_geom.inp" file) and appends to it all
-    # of the header information needed for the calculation
+    # Writes a new file (the "conformer_geom.inp" file) and appends to 
+    # it all of the header information needed for the calculation
     coords = os.path.join(cwd,conformer + '.xyz')
     with open(f, 'a') as outfile, open(coords, 'r') as xyz:
         outfile.write("%NProcShared={}\n".format(nodes))
         outfile.write("%mem={}GB\n".format(mem))
-        outfile.write("%chk=/{0}/{1}_resp.chk\n".format(resname,conf))
-        outfile.write("#P HF/6-31g* opt(tight,MaxCycles=1000)
-        scf(tight,MaxCycles=1000)\n\n")
-        outfile.write("Gaussian09 geometry optimization at HF/6-31g*\n\n")
+        outfile.write("%rwf=/tmp/{0}_opt/,-1\n".format(conf))
+        outfile.write("%chk=/tmp/{1}_opt/{1}_opt.chk\n".format(resname,conf))
+        outfile.write("#T B3LYP/6-311++G(2d,2p) OPT(Tight) scf(tight)\n\n")
+        outfile.write(" Gaussian09 opt calc of conf00000 using B3LYP/6-311++G(2d,2p)\n\n")
         outfile.write("{0} {1}\n".format(chrg,mult))
 
     # Loads the molecular geometry into a list called "coords"
@@ -268,24 +220,27 @@ def write_geom_input(f,resname,conf,chrg,mult,nodes,mem):
             lines = line.split()
             coords.append(lines)
 
-    # Removes the first two header lines of the molecular geometry file (xyz
-    # format ONLY) and removes any additional lines containing more or less
-    # than just four items, the atom, and its x, y, and z coordinates
+    # Removes the first two header lines of the molecular geometry file
+    # (xyz format ONLY) and removes any additional lines containing more
+    # or less than just four items, the atom, and its x, y, and z 
+    # coordinates
     del coords[0]
     del coords[0]
-    for i in range(0,len(coords)):
-        if coords[i] != 4:
+    for i in range(len(coords)):
+        if len(coords[i]) != 4:
             del coords[i]
-            
-    # Reopens the "conformer_resp.inp" file and appends the formatted molecular
-    # geometry coordinates to the file
+
+    # Reopens the "conformer_resp.inp" file and appends the formatted 
+    # molecular geometry coordinates to the file
     with open(f, 'a') as outfile:
         for i in range(0,len(coords)):
-            a = format(int(coords[i][0]),'<10d')
-            x = format(float(coords[i][1]),'12.6f')
-            y = format(float(coords[i][2]),'12.6f')
-            z = format(float(coords[i][3]),'12.6f')
+            a = format(coords[i][0],'<3s')
+            x = format(float(coords[i][1]),'15.5f')
+            y = format(float(coords[i][2]),'15.5f')
+            z = format(float(coords[i][3]),'15.5f')
             outfile.write('{}{}{}{}'.format(a, x, y, z))
+            outfile.write('\n')
+        outfile.write('\n')
     return None
 
 
@@ -303,7 +258,7 @@ def write_resp_input(f,resname,conf,chrg,mult,nodes,mem):
     conf : string
         Three letter residue prefix + integer (conformer index number)
     chrg : integer
-        Molecular charge 
+        Molecular charge
     mult : integer
         Molecular multiplicity
     nodes : integer
@@ -316,16 +271,14 @@ def write_resp_input(f,resname,conf,chrg,mult,nodes,mem):
     if os.path.isfile(f) is True:
         raise Exception('File {} already exists!\n'.format(f))
 
-    # Writes a new file (the "conformer_resp.inp" file) and appends to it all
-    # of the header information needed for the calculation
+    # Writes a new file (the "conformer_resp.inp" file) and appends to 
+    # it all of the header information needed for the calculation
     with open(f, 'a') as outfile:
         outfile.write("%NProcShared=12\n")
         outfile.write("%mem=12GB\n")
-        outfile.write("%chk=/{0}/{1}_resp.chk\n".format(resname,conf))
-        outfile.write("#P B3LYP/c-pVTZ scf(tight,MaxCycles=1000) Pop=MK \
-        IOp(6/33=2,6/41=10,6/42=17)\n\n")
-        outfile.write("Gaussian09 single point electrostatic potential \
-        calculation at B3LYP/c-pVTZ\n\n")
+        outfile.write("%chk=/tmp/{0}/{1}_resp.chk\n".format(resname,conf))
+        outfile.write("#P B3LYP/c-pVTZ scf(tight,MaxCycles=1000) Pop=MK IOp(6/33=2,6/41=10,6/42=17)\n\n")
+        outfile.write("Gaussian09 single point electrostatic potential calculation at B3LYP/c-pVTZ\n\n")
         outfile.write("{0} {1}\n".format(chrg,mult))
 
     # Loads the molecular geometry into a list called "coords"
@@ -336,24 +289,27 @@ def write_resp_input(f,resname,conf,chrg,mult,nodes,mem):
             lines = line.split()
             coords.append(lines)
 
-    # Removes the first two header lines of the molecular geometry file (xyz
-    # format ONLY) and removes any additional lines containing more or less
-    # than just four items, the atom, and its x, y, and z coordinates
+    # Removes the first two header lines of the molecular geometry file 
+    # (xyz format ONLY) and removes any additional lines containing more
+    # or less than just four items, the atom, and its x, y, and z 
+    # coordinates
     del coords[0]
     del coords[0]
     for i in range(0,len(coords)):
-        if coords[i] != 4:
+        if len(coords[i]) != 4:
             del coords[i]
-            
-    # Reopens the "conformer_resp.inp" file and appends the formatted molecular
-    # geometry coordinates to the file
+
+    # Reopens the "conformer_resp.inp" file and appends the formatted 
+    # molecular geometry coordinates to the file
     with open(f, 'a') as outfile:
         for i in range(0,len(coords)):
-            a = format(int(coords[i][0]),'<10d')
-            x = format(float(coords[i][1]),'12.6f')
-            y = format(float(coords[i][2]),'12.6f')
-            z = format(float(coords[i][3]),'12.6f')
+            a = format(coords[i][0],'<3s')
+            x = format(float(coords[i][1]),'15.5f')
+            y = format(float(coords[i][2]),'15.5f')
+            z = format(float(coords[i][3]),'15.5f')
             outfile.write('{}{}{}{}'.format(a, x, y, z))
+            outfile.write('\n')
+        outfile.write('\n')
     return None
 
 
@@ -376,16 +332,19 @@ def write_submission_script(f,resname,inptype):
     if os.path.isfile(f) is True:
         raise Exception('File {} already exists!\n'.format(f))
     # Append header to .pbs submission file
-    with open(filename, 'a') as f:
+    with open(f, 'a') as f:
         f.write("#!/bin/bash\n")
-        f.write("#SBATCH --partition=short\n")
+        f.write("#SBATCH --partition=preempt \n")
         f.write("#SBATCH --nodes=1\n")
         f.write("#SBATCH --ntasks-per-node=12\n")
         f.write("#SBATCH --export=ALL\n")
         f.write("#SBATCH --time=0-24:00:00\n")
-        f.write("#SBATCH --error={0}_{1}.err\n\n".format(resname,inptype))
+        f.write("#SBATCH --error={0}_opt.err\n\n".format(resname,inptype))
+        f.write("test -d /tmp/{0}_opt || mkdir -v /tmp/{0}_opt\n\n".format(resname,inptype))
         f.write("module load gaussian\n\n")
         f.write("g09 < {0}_{1}.inp > {0}_{1}.out\n\n".format(resname,inptype))
+        f.write("cp -pv /tmp/{0}_opt/{0}_opt.chk .\n\n".format(resname))
+        f.write("rm -rv /tmp/{0}_opt\n\n".format(resname))
     return None
 
 
@@ -451,8 +410,8 @@ def write_esp_dat(conf):
         identify the different conformers.
 
     """
-    # Make sure the "_resp..out" file exists, and that the "_esp.dat" file will
-    # not be overwritten
+    # Make sure the "_resp..out" file exists, and that the "_esp.dat" 
+    # file will not be overwritten
     if os.path.isfile(conf + '_resp.out') is not True:
         raise Exception('File {} is missing!'.format(conf + '_resp.out'))
     if os.path.isfile(conf + '_esp.dat') is True:
@@ -460,9 +419,10 @@ def write_esp_dat(conf):
 
     # Retrieves the two ngrid values from the resp.out file (the number
     # of atoms in the molecule, and the number of points involved in
-    # the electstatic potential fit). Subtracts the number of atoms from the 
-    # number of points, and then appends the number of atoms to the front of 
-    # the result. This modified ngrid value is written to the esp.dat file.
+    # the electstatic potential fit). Subtracts the number of atoms from 
+    # the number of points, and then appends the number of atoms to the 
+    # front of the result. This modified ngrid value is written to the 
+    # esp.dat file.
     ngrid = []
     with open(conf + '_resp.out', 'r') as f, \
          open(conf + '_esp.dat', 'a') as esp:
@@ -472,15 +432,15 @@ def write_esp_dat(conf):
                 ngrid.append(line.split()[2])
         ngrid_esp = ngrid[0] + str(int(ngrid[1]) - int(ngrid[0]))
         spacing = 4 + len(ngrid_esp)
-        # Four empty spaces must always lead this number, but this number is
-        # not consistently the same length
+        # Four empty spaces must always lead this number, but this 
+        # number is not consistently the same length
         esp.write('{v:>{s}}\n'.format(v=ngrid_esp,s=spacing))
 
     # Conversion factor from Angstroms to Bohrs
     cnv_factor = 0.529177249
 
-    # Retrieves the "Atomic Centers" from the "_resp.out" file and writes them
-    # to the "_esp.dat" file in fortran scientific notation
+    # Retrieves the "Atomic Centers" from the "_resp.out" file and 
+    # writes them to the "_esp.dat" file in fortran scientific notation
     atomic_centers = []
     with open(conf + '_resp.out', 'r') as f, \
          open(conf + '_esp.dat', 'a') as esp:
@@ -493,10 +453,10 @@ def write_esp_dat(conf):
             z = fortran_format(float(atomic_centers[i][2]) / cnv_factor)
             esp.write('{:>32}{:>16}{:>16}\n'.format(x, y, z))
 
-    # Writes the "ESP Fit Center" and "Fit" values from the "_resp.out" file to
-    # two temporary files, respectively, after first confirming that the files
-    # don't already exist. Trying to store this much data in memory (i.e. in a
-    # list) could be risky.
+    # Writes the "ESP Fit Center" and "Fit" values from the "_resp.out" 
+    # file to two temporary files, respectively, after first confirming 
+    # that the files don't already exist. Trying to store this much data
+    # in memory (i.e. in a list) could be risky.
     try: os.remove('tmp00.txt')
     except: pass
     try: os.remove('tmp01.txt')
@@ -511,9 +471,9 @@ def write_esp_dat(conf):
             if re.search('Fit    ', line):
                 c.write(line)
 
-    # Formats and writes the content of the temporary files to the "_esp.dat"
-    # file. First column is the "Fit" value, followed by the "ESP Fit Center"
-    # values in the remaining three columns.
+    # Formats and writes the content of the temporary files to the 
+    # "_esp.dat" file. First column is the "Fit" value, followed by the
+    # "ESP Fit Center" values in the remaining three columns.
     with open('tmp00.txt', 'r') as b, \
          open('tmp01.txt', 'r') as c, \
          open(conf + '_esp.dat', 'a') as esp:
@@ -532,7 +492,11 @@ def write_esp_dat(conf):
     return None
 
 
-def write_resp_in(f='resp.in',nconfs,iqopt,ihfree,qwt)
+
+
+
+
+def write_resp_in(f='resp.in',nconfs,iqopt,ihfree,qwt):
     """
     UNFINISHED
     """
@@ -570,7 +534,6 @@ def write_resp_in(f='resp.in',nconfs,iqopt,ihfree,qwt)
                 conf += 1
             conf = 1
             atom += 1
-
 
 
 def write_leap_in(f='leap.in',resname):
@@ -611,6 +574,101 @@ def write_sander_in():
         outfile.write("  indmeth=1\n")
         outfile.write(" &end")
     return None
+
+
+def check_termination(filepath):                                                
+    """ Checks gaussian out files for normal termination.
+    UNFINISHED
+    """
+    with open(filepath, 'r') as f:                                              
+        for line in f:                                                          
+            if 'Normal termination of Gaussian ' in line:                       
+                return True                                                     
+    print('{} did not terminate correctly!'.format(filepath))                   
+    return False 
+
+
+def resp_menu():
+    """
+    UNFINISHED
+    """
+    def print_resp_menu():
+        title = "RESP FITTING MENU"
+        formatting = int( (78 - len(title)) / 2 ) * "-"
+        print(formatting, title, formatting, "\n")
+        print("1. Submit error minimization geometry optimizations to Gaussian.")
+        print("2. Check geometry optimizations for correct termination.")
+        print("3. Submit single point electrostatic potential calculations to Gaussian.")
+        print("4. Check electrostatic potential calculations for correct termination.")
+        print("5. ")
+        print("6. Return to the main menu.\n")
+        print(79 * "-", "\n")
+
+    loop = True
+
+    while loop:
+        print_resp_menu()
+        choice = input("Enter your choice [1-6]: ")
+
+        if choice == "1":
+            loop = False
+            return
+        elif choice == "2":
+            loop = False
+            return
+        elif choice == "3":
+            loop = False
+            return
+        elif choice == "4":
+            loop = False
+            return
+        elif choice == "5":
+            loop = False
+            return
+        elif choice == "6":
+            loop = False
+            return main_menu()
+        else:
+            input("Not an option. Press any key to try again.\n")
+        
+def main_menu():
+    """
+    UNFINISHED
+    """
+    def print_main_menu():
+        title = "MAIN MENU"
+        formatting = int( (78 - len(title)) / 2 ) * "-"
+        print(formatting, title, formatting, "\n")
+        print("I want to...")
+        print("1. Build conformer libraries and run electronic structure calculations.")
+        print("2. Build the force fields for MD simulations (RESP fitting).")
+        print("3. Read more about what this program does.")
+        print("4. Exit the program.\n")
+        print(79 * "-", "\n")
+
+    loop = True
+
+    while loop:
+        print_main_menu()
+        choice = input("Enter your choice [1-4]: ")
+
+        if choice == "1":
+            loop = False
+            # get_dft_menu_choice()
+            return
+        elif choice == "2":
+            loop = False
+            return resp_menu()
+        elif choice == "3":
+            help(main_menu)
+        elif choice == "4":
+            loop = False
+            raise SystemExit
+        else:
+            input("Not an option. Press any key to try again.\n")
+
+
+
 
 
 def check_convergence(f='punch'):
@@ -657,104 +715,104 @@ def check_convergence(f='punch'):
         return False
 
 
+def main():
+    """ This is the main program.
+    UNFINISHED
+    """
 
-""" START PROGRAM """
 
+cwd = os.getcwd()
 
+namelist = read_namelist('namelist.in')
+job = namelist[0]["jobtype"]
 
-if __name__=="__main__":
+#  JOB TYPE 1
 
-    cwd = os.getcwd()
+if job == "1":
+    resname = namelist[0]["resname"]
+    chrg = namelist[0]["charge"]
+    mult = namelist[0]["multiplicity"]
+    nconf = int(namelist[0]["nconf"])
 
-    namelist = read_namelist('namelist.in')
-    job = namelist[0]["jobtype"]
-    
-""" JOB TYPE 1 """    
+    # Make .inp and .pbs files for geom and resp calculations and move them
+    # into their own directories
+    for i in range(0,nconf):
+        conformer = namelist[1][i]
+        write_submission_script(conformer+"_geom.pbs",conformer,"geom")
+        write_submission_script(conformer+"_resp.pbs",conformer,"resp")
+        write_geom_input(conformer+"_geom.inp",resname,conformer,chrg,mult, 4, 8)
+        write_resp_input(conformer+"_resp.inp",resname,conformer,chrg,mult, 4, 8)
+        os.mkdir(conformer)
+        for f in glob.glob(conformer+'*pbs'):
+            shutil.move(f, conformer)
+        for f in glob.glob(conformer+'*inp'):
+            shutil.move(f, conformer)
 
-    if job == "1":
-        resname = namelist[0]["resname"]
-        chrg = namelist[0]["charge"]
-        mult = namelist[0]["multiplicity"]
-        nconf = int(namelist[0]["nconf"])
-    
-        # Make .inp and .pbs files for geom and resp calculations and move them
-        # into their own directories
-        for i in range(0,nconf):
-            conformer = namelist[1][i]
-            write_submission_script(conformer+"_geom.pbs",conformer,"geom")
-            write_submission_script(conformer+"_resp.pbs",conformer,"resp")
-            write_geom_input(conformer+"_geom.inp",resname,conformer,chrg,mult)
-            write_resp_input(conformer+"_resp.inp",resname,conformer,chrg,mult)
-            os.mkdir(conformer)
-            for f in glob.glob(conformer+'*pbs'):
-                shutil.move(f, conformer)
-            for f in glob.glob(conformer+'*inp'):
-                shutil.move(f, conformer)
+    # Submits the pbs files in each directory
+    for i in range(0,nconf):
+        conformer = namelist[1][i]
+        os.chdir(conformer)
+        sp.check_call("sbatch -A richmondlab *geom.pbs", shell=True)
+        os.chdir(cwd)
 
-        # Submits the pbs files in each directory
-        for i in [0,nconf-1]:
-            conformer = namelist[1][i]
-            os.chdir(conformer)
-            sb.check_call("sbatch -A richmondlab *pbs", shell=True)
-            os.chdir(cwd)
-    
-""" JOB TYPE 2 """
+#  JOB TYPE 2
 
-    elif job == "2":
+elif job == "2":
 
-        # Generate esp.dat files
-        for i in range(0,nconf):
-            write_esp_dat(namelist[1][i])
+    # Generate esp.dat files
+    for i in range(0,nconf):
+        write_esp_dat(namelist[1][i])
 
-        # Concatenate all esp.dat files
-        sp.check_call("cat *esp.dat > espot", shell=True)
+    # Concatenate all esp.dat files
+    sp.check_call("cat *esp.dat > espot", shell=True)
 
-        # END STEP 6 --- START STEP 7
+    # END STEP 6 --- START STEP 7
 
-        # Build the first resp.in file
-        write_resp_in('resp.in',nconfs,'1','1','00')
+    # Build the first resp.in file
+    write_resp_in('resp.in',nconfs,'1','1','00')
 
-        # END STEP 7 --- START STEP 8
+    # END STEP 7 --- START STEP 8
 
-        # Run the resp fit for the first time
-        # -q qin not required since iqopt = 1
-        sp.check_call("resp -O -i resp.in -o resp.out -e espot", shell=True)
+    # Run the resp fit for the first time
+    # -q qin not required since iqopt = 1
+    sp.check_call("resp -O -i resp.in -o resp.out -e espot", shell=True)
 
-        # Check punch file to make sure everything is working
+    # Check punch file to make sure everything is working
 
-        # Duplicate qout as qin (output charge file becomes the input charge
-        # file for the next resp fit)
-        sp.check_call("cp qout qin", shell=True)
+    # Duplicate qout as qin (output charge file becomes the input charge
+    # file for the next resp fit)
+    sp.check_call("cp qout qin", shell=True)
 
-        # Rename punch, qout, espot files to punch##, qout##, espot## so that
-        # the files are backed up and don't get overwritten
-        os.rename('punch', 'punch{}'.format(0))
-        os.rename('qout', 'qout{}'.format(0))
-        os.rename('espot', 'espot{}'.format(0))
+    # Rename punch, qout, espot files to punch##, qout##, espot## so that
+    # the files are backed up and don't get overwritten
+    os.rename('punch', 'punch{}'.format(0))
+    os.rename('qout', 'qout{}'.format(0))
+    os.rename('espot', 'espot{}'.format(0))
 
-        """
-        STEP 9 SHOULD BE DONE MANUALLY?
+    """
+    STEP 9 SHOULD BE DONE MANUALLY?
 
-        # END STEP 8 --- START STEP 9
+    # END STEP 8 --- START STEP 9
 
-        try:
-            sp.check_call(
-                "cp /packages/amber/12/dat/leap/parm/parm99.dat ./", \
-                 shell=True)
-        except:
-            raise FileNotFoundError('Could not find parm99.dat file!\n')
-
-        # Check the parameters with one of (the first in this case) mol files
+    try:
         sp.check_call(
-            "parmchk -i {}1.mol2 -o {}.frcmod -f mol2 -p parm99.dat".format(
-                resname), shell=True)
-        
-        # Checks the parameters automatically
-        with open(resname + '.frcmod', 'r') as f:
-            for line in f:
-                if re.search('ATTN', line):
-                    raise Exception('ATTN Error detected in .frcmod file!\n')
-        """
+            "cp /packages/amber/12/dat/leap/parm/parm99.dat ./", \
+             shell=True)
+    except:
+        raise FileNotFoundError('Could not find parm99.dat file!\n')
+
+    # Check the parameters with one of (the first in this case) mol files
+    sp.check_call(
+        "parmchk -i {}1.mol2 -o {}.frcmod -f mol2 -p parm99.dat".format(
+            resname), shell=True)
+
+    # Checks the parameters automatically
+    with open(resname + '.frcmod', 'r') as f:
+        for line in f:
+            if re.search('ATTN', line):
+                raise Exception('ATTN Error detected in .frcmod file!\n')
+    """
+
 
     """
     Job type = 2 steps:
@@ -764,12 +822,12 @@ if __name__=="__main__":
     DONE-- Change the current directory to RESP
     DONE-- Create esp.dat files for each conformer
     DONE-- Concatenate all esp.dat files into espot
-    DONE-- For the first resp fit, edit resp.in so iqopt = 1 and for each 
-           conformer, list the atoms and the restrictions for the charge and 
+    DONE-- For the first resp fit, edit resp.in so iqopt = 1 and for each
+           conformer, list the atoms and the restrictions for the charge and
            create the matrix at the bottom of the file
     DONE-- Run the resp fit
 
-    Get the charges for the first molecular unit from qout and copy them into 
+    Get the charges for the first molecular unit from qout and copy them into
     qnext
 
     DONE-- Make a copy of qout and name the file qin
@@ -793,109 +851,120 @@ if __name__=="__main__":
 
     """
 
-        resp_dir = os.mkdir('RESP')
+    resp_dir = os.mkdir('RESP')
 
-        for files in os.listdir():
-            if filename.endswith('_resp.out'):
-                shutil.move(files, resp_dir)
-            if filename.endswith('.mol2'):
-                shutil.move(files, resp_dir)
+    for files in os.listdir():
+        if filename.endswith('_resp.out'):
+            shutil.move(files, resp_dir)
+        if filename.endswith('.mol2'):
+            shutil.move(files, resp_dir)
 
-        cwd = os.chdir('RESP')
+    cwd = os.chdir('RESP')
 
-        for i in range(0,nconf): 
-            conf = resname + str(i + 1)
-            write_esp_dat(conf)
+    for i in range(0,nconf):
+        conf = resname + str(i + 1)
+        write_esp_dat(conf)
 
-        esp_filelist = []
-        cwd = os.getcwd()
-        # Create a list of [ABC]_esp.dat files that is sorted based on the
-        # number in the file name.
-        for files in os.listdir(cwd):
-            if filename.endswith("_esp.dat"):
-                esp_filelist.append(filename)
-            esp_filelist = sorted(esp_filelist, key=lambda x: 
-                          int("".join([i for i in x if i.isdigit()])
-                             )
+    esp_filelist = []
+    cwd = os.getcwd()
+    # Create a list of [ABC]_esp.dat files that is sorted based on the
+    # number in the file name.
+    for files in os.listdir(cwd):
+        if filename.endswith("_esp.dat"):
+            esp_filelist.append(filename)
+        esp_filelist = sorted(esp_filelist, key=lambda x:
+                      int("".join([i for i in x if i.isdigit()])
                          )
+                     )
 
-        # Concatenate all esp.dat files into the espot file.
-        with open('espot', 'w') as espot:
-            for i in esp_filelist:
-                with open(os.path.join(cwd,i)) as infile:
-                    for line in infile:
-                        espot.write(line)
+    # Concatenate all esp.dat files into the espot file.
+    with open('espot', 'w') as espot:
+        for i in esp_filelist:
+            with open(os.path.join(cwd,i)) as infile:
+                for line in infile:
+                    espot.write(line)
 
+# Tried to run the program to test job type ==1, but the program will not run
+# --Python doesn't like ' in the code
 """ JOB TYPE 3 """
-    elif job == "3":
-        
-        # For each conformer:
+elif job == "3":
 
-            ' mv ABC#_esp.dat esp.dat '
+    # For each conformer:
 
-            ' 
-            antechamber -o Temp.mol2 -fo mol2 -c rc -cf qnext -at amber -fi
-                mol2 -i ABC#.mol2 -rn ABC 
+        ' mv ABC#_esp.dat esp.dat '
 
-                -o    : output file name
-                -fo   : output file format
-                -c    : charge method
-                -cf   : charge file name
-                -at   : atom type (gaff [default], amber, bcc, sybyl)
-                -fi   : input file format
-                -i    : input file name
-                -rn   : residue name (overrides input file [default = MOL])
-                -help : gives full flag menu for antechamber 
+        '
+        antechamber -o Temp.mol2 -fo mol2 -c rc -cf qnext -at amber -fi
+            mol2 -i ABC#.mol2 -rn ABC
 
-                -i, -o, -fi, -fo MUST appear. All other flags are optional.
-            '
+            -o    : output file name
+            -fo   : output file format
+            -c    : charge method
+            -cf   : charge file name
+            -at   : atom type (gaff [default], amber, bcc, sybyl)
+            -fi   : input file format
+            -i    : input file name
+            -rn   : residue name (overrides input file [default = MOL])
+            -help : gives full flag menu for antechamber
 
-            ' 
-            tleap -s -f leap.in 
-            
-                -s : ignore leaprc startup file
-                -f : source file
-            '
+            -i, -o, -fi, -fo MUST appear. All other flags are optional.
+        '
 
-            '
-            sander -O -i sander.in -o sander.out -c prmcrd -p prmtop 
-            
-                -O : overwrite output files
-                -i : input control data for the min/md run
-                -o : output user readable state infor and diagnostics (-o
-                stdout will send output to stdout (to the terminal) instead of
-                to a file)
-                -c : input initial coordinates and (optionally) velocities and
-                periodic box size
-                -p : input molecular topology, force field, periodic box type,
-                atom and residue names
-            '
+        '
+        tleap -s -f leap.in
 
-            ' rm ANTECHAMBER* ATOMTYPE.INF leap.log mdinfo prmcrd sander.out
-               restrt '
+            -s : ignore leaprc startup file
+            -f : source file
+        '
 
-            ' mv Temp.mol2 ABC#.mol2 '
+        '
+        sander -O -i sander.in -o sander.out -c prmcrd -p prmtop
 
-            ' mv esp.dat ABC#_esp.dat '
+            -O : overwrite output files
+            -i : input control data for the min/md run
+            -o : output user readable state infor and diagnostics (-o
+            stdout will send output to stdout (to the terminal) instead of
+            to a file)
+            -c : input initial coordinates and (optionally) velocities and
+            periodic box size
+            -p : input molecular topology, force field, periodic box type,
+            atom and residue names
+        '
 
-            ' mv prmtop ABC#.top '
+        ' rm ANTECHAMBER* ATOMTYPE.INF leap.log mdinfo prmcrd sander.out
+           restrt '
 
-            ' mv esp.induced ABC#_esp.induced '
+        ' mv Temp.mol2 ABC#.mol2 '
 
-            ' mv esp.qm-induced ABC#_esp.qm-induced '
+        ' mv esp.dat ABC#_esp.dat '
 
-        sp.check_call("mv {}_esp.dat esp.dat".format(conf))
+        ' mv prmtop ABC#.top '
 
-        sp.check_call(\
-            'antechamber -o Temp.mol2 -fo mol2 -c rc -cf qnext -at amber \
-            -fi mol2 -i {}.mol2 -rn {}'.format(conf,resname)
+        ' mv esp.induced ABC#_esp.induced '
 
-    # Use sp.check_call("bash cmd", shell=True)
-    # Note: sp.check_call() and sp.run() should ALWAYS be
-    # preferred over sp.call(), sp.Popen(), os.system(), and 
-    # os.popen().
-    
-""" UNRECOGNIZED JOB TYPE """    
-    else:
-        raise ValueError('Unacceptable job type chosen. Check namelist.in \
-        file and try again.\n')
+        ' mv esp.qm-induced ABC#_esp.qm-induced '
+
+    sp.check_call("mv {}_esp.dat esp.dat".format(conf))
+
+    sp.check_call(\
+        'antechamber -o Temp.mol2 -fo mol2 -c rc -cf qnext -at amber \
+        -fi mol2 -i {}.mol2 -rn {}'.format(conf,resname)
+
+# Use sp.check_call("bash cmd", shell=True)
+# Note: sp.check_call() and sp.run() should ALWAYS be
+# preferred over sp.call(), sp.Popen(), os.system(), and
+# os.popen().
+
+""" UNRECOGNIZED JOB TYPE """
+else:
+    raise ValueError('Unacceptable job type chosen. Check namelist.in \
+    file and try again.\n')
+
+
+
+""" START PROGRAM """
+
+
+
+if __name__=="__main__":
+    main()
