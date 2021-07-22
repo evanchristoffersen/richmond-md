@@ -9,61 +9,39 @@ Python Version: 3.9.2
 
 Update Log:
 
--- Notes and Questions --
-Does the job type 1 simultaneously submit the .pbs files for geomery optimization
-and the resp fitting? I'm pretty sure this needs to be changed.
+#SBATCH --account=appquantchem   
+Account to bill needs to be added to the top of the .pbs files. 
 
-#SBATCH --account=appquantchem   ### Account to bill eeds to be added to the
-top of the .pbs files. I once had an issue with this not being in the file, so
-it should be added now.
+The each conformer .pbs file needs to create a scratch directory and 
+.chk file
 
-The each conformer .pbs file needs to create a scratch directory and .chk file
+Maybe have two versions of the program--one that is lightly
+commented and the other be more heavily commented?
 
+On line 612, write_geom_input() requires 2 additional arguments (nodes 
+and memory). I temporartly added two additional arguments so I could 
+proceed with debugging the program. These temporary place holders need 
+to be changed.
 
-KJ response: maybe have two versions of the program--one that is lightly
-    commented and the other be more heavily commented? I think the commenting
-    style you chose (commenting on the function of each block instead the
-    function of each individual line) is sufficient and allows us toe move
-    forward with this.
+Added code so there are two empty lines in the .inp files.
 
--- What has been done --
-Attempted to run the program and resolved errors that were encountered along
-the way. Only minor errors (mostly syntax) were encountered.
+Adjusted the spacing between columns in geom.inp and resp.inp files to 
+match the spacing of files that I have successfully ran on Talapas
 
-On line 612, write_geom_input() requires 2 additional arguments (nodes and
-memory). I temporartly added two additional arguments so I could proceed with
-debugging the program. These temporary place holders need to be changed.
-
-Added code so there are two empty lines in the .inp files. I can't remember if
-there should be 1 or 2 empty lines
-
-Adsjuted the spacing between columns in geom.inp and resp.inp files to match
-the spacing of files that I have successfully ran on Talapas
-
-Program now successfully submits all geomery optimization jobs to Talaps,
-except for conformer0--this needs to be corrected
+Program now successfully submits all geomery optimization jobs to 
+Talapas, except for conformer0 - this needs to be corrected
 
 
--- Next steps --
-With the same starting files I used, assure the output files exactly match
-the files that were produced when I ran the program. I think it is a good idea
-to do this for each stage of the debugging process.
 
-Assure the resp files that are created by the program exactly match the files that
-are created by Nick's program.
-
-With the short tail tail version of SDS, assure the Python and Nick's program
-create exactly the same files. Even--I have already run some of the jobs, so I
-need to give you the files, if I haven't already.
+With the short tail tail version of SDS, assure the Python and Nick's 
+program create exactly the same files. Evan--I have already run some of 
+the jobs, so I need to give you the files, if I haven't already.
 
 
 
 
-
-
-COMPLETED: JOB TYPE 1 Job type 1 should be ready to go. It needs a test
-set of files to confirm that everything is written properly. This data
-set would preferably be around 12 conformers total of some small
+TEST DATA SET: 
+This data set would preferably be 12 conformers total of some small
 molecule that would take only seconds to minutes to run the calculations
 for, but would still have at least 12 atoms, where some of the atoms are
 heavier than Ne. Maybe like a short chain SDS molecule. Let's say
@@ -71,37 +49,16 @@ propanol with a sulfate head group. I chose this molecule because I want
 to confirm that all of the files format correctly when handling numbers
 that are 1 character and 2 characters long.
 
-IN PROGRESS: JOB TYPE 2 & 3 Job type 2 and 3 are still under way. Rather
-than having to choose some random directory to make copies of all of the
-resp fit files, or assume that a student already has access to all of
-the resp fit files, functions were defined that write most of the files
-from scratch:
+OTHER:
+The popular computational open source tool: "open babel" will
+automatically make .mol2 copies of any and all .xyz files using the
+command: obabel *.xyz -omol2 -m but it may require installation of
+open babel on Talapas, which probably isn't possible. This will save
+us from having to write a function to build .mol2 files from
+scratch, hopefully. .mol2 files seem very complicated, and I imagine
+even if we got a function working that we wrote to convert .xyz to
+.mol2, it would be buggy and likely not stand the test of time.
 
-        write_esp_dat() : makes the _esp.dat files and concatenates them
-        into espot
-
-        write_resp_in() : makes the resp.in files - UNFINISHED
-
-        check_convergence() : checks to see if the resp fitting has
-        finished by automatically checking the punch file
-
-    It is unclear if the leap.in and/or sander.in files are generated by
-    Amber or one of the other softwares during this process. If they are
-    not automatically generated, I have started writing the following
-    functions which can write those files from scratch:
-
-        write_leap_in() : UNFINISHED
-
-        write_sander_in() : UNFINISHED
-
-    The popular computational open source tool: "open babel" will
-    automatically make .mol2 copies of any and all .xyz files using the
-    command: obabel *.xyz -omol2 -m but it may require installation of
-    open babel on Talapas, which probably isn't possible. This will save
-    us from having to write a function to build .mol2 files from
-    scratch, hopefully. .mol2 files seem very complicated, and I imagine
-    even if we got a function working that we wrote to convert .xyz to
-    .mol2, it would be buggy and likely not stand the test of time.
 """
 
 
@@ -120,6 +77,113 @@ import sys # Error management
 
 
 """ DEFINE FUNCTIONS """
+
+
+
+def write_namelist():
+    """
+    Words
+
+    """
+    def get_molecule_params(parameter):
+        """
+        """
+        loop = True
+        while loop:
+            out = input("Enter the molecule's " + parameter + ": ")
+            try:
+                int(out)
+                return out
+            except:
+                print('\nERROR: Please enter an integer value.\n')
+
+    nconf = get_molecule_params('number of conformers')
+    natoms = get_molecule_params('number of atoms')
+    charge = get_molecule_params('charge')
+    multiplicity = get_molecule_params('multiplicity')
+
+    loop = True
+    forbidden_residues = [
+    'ABY' ,'ACE' ,'ACX' ,'ADD' ,'ADE' ,'AGL' ,'ALA' ,'ALL' ,'AME' ,'AND' ,'ANY'     
+    ,'APS' ,'ARG' ,'ASA' ,'ASB' ,'ASH' ,'ASN' ,'ASP' ,'ATD' ,'AVE' ,'AVG' ,'BCC'    
+    ,'BCU' ,'BEG' ,'BGL' ,'BIO' ,'BSA' ,'BSB' ,'BUG' ,'CGL' ,'CHL' ,'CIM' ,'CIO'    
+    ,'CIP' ,'CME' ,'CMU' ,'COO' ,'COR' ,'COS' ,'CRC' ,'CSA' ,'CSB' ,'CSD' ,'CYM'    
+    ,'CYS' ,'CYT' ,'CYX' ,'DAE' ,'DAG' ,'DAL' ,'DAN' ,'DAP' ,'DCE' ,'DCN' ,'DCP'    
+    ,'DEF' ,'DGD' ,'DGE' ,'DGL' ,'DGN' ,'DHA' ,'DHU' ,'DLM' ,'DMA' ,'DME' ,'DMF'    
+    ,'DMG' ,'DMU' ,'DNA' ,'DSA' ,'DSB' ,'DTD' ,'DTE' ,'DTN' ,'DWG' ,'EGL' ,'END'    
+    ,'EPW' ,'EQG' ,'ESA' ,'ESB' ,'ESP' ,'ESU' ,'FGL' ,'FOR' ,'FSA' ,'FSB' ,'GGL'    
+    ,'GLH' ,'GLN' ,'GLU' ,'GLY' ,'GME' ,'GSA' ,'GSB' ,'GUA' ,'HCU' ,'HDU' ,'HEU'    
+    ,'HGL' ,'HIA' ,'HID' ,'HIE' ,'HIP' ,'HIS' ,'HMC' ,'HNA' ,'HND' ,'HNE' ,'HOD'    
+    ,'HOG' ,'HOH' ,'HPU' ,'HSA' ,'HSB' ,'HSG' ,'HWG' ,'HYP' ,'IGL' ,'ILE' ,'INO'    
+    ,'INT' ,'ISA' ,'ISB' ,'IWG' ,'JAH' ,'JCC' ,'JCP' ,'JGL' ,'JMS' ,'JPC' ,'JSA'    
+    ,'JSB' ,'JTR' ,'KGL' ,'KNK' ,'KSA' ,'KSB' ,'LEN' ,'LEO' ,'LEU' ,'LYH' ,'LYN'    
+    ,'LYS' ,'MAC' ,'MAU' ,'MCU' ,'MEE' ,'MET' ,'MEU' ,'MEX' ,'MFC' ,'MMA' ,'MMC'    
+    ,'MMG' ,'MMI' ,'MMU' ,'MOC' ,'MOD' ,'MOH' ,'MRA' ,'MRC' ,'MRG' ,'MRI' ,'MRP'    
+    ,'MRU' ,'MSU' ,'MTA' ,'MTG' ,'NET' ,'NHE' ,'NLN' ,'NMA' ,'NME' ,'NOT' ,'NPT'    
+    ,'NUM' ,'OAU' ,'OCU' ,'OEU' ,'OHB' ,'OHE' ,'OHG' ,'OLP' ,'OLS' ,'OLT' ,'OME'    
+    ,'OMU' ,'OXT' ,'PAK' ,'PBG' ,'PDB' ,'PEA' ,'PEB' ,'PGA' ,'PGB' ,'PGR' ,'PGS'    
+    ,'PHE' ,'PHU' ,'PKA' ,'PKB' ,'PLA' ,'PLB' ,'PMA' ,'PMB' ,'PNA' ,'PNB' ,'POM'    
+    ,'PRE' ,'PRO' ,'PSU' ,'PTA' ,'PTB' ,'PTR' ,'QBD' ,'QBU' ,'QCD' ,'QCU' ,'QEA'    
+    ,'QEB' ,'QGA' ,'QGB' ,'QGG' ,'QJD' ,'QJU' ,'QKA' ,'QKB' ,'QLA' ,'QLB' ,'QMA'    
+    ,'QMB' ,'QMG' ,'QNA' ,'QNB' ,'QPD' ,'QPU' ,'QTA' ,'QTB' ,'QUG' ,'QVA' ,'QVB'    
+    ,'QWA' ,'QWB' ,'QYA' ,'QYB' ,'RAN' ,'RCN' ,'RCW' ,'REA' ,'REB' ,'RGA' ,'RGB'    
+    ,'RGE' ,'RGN' ,'RKA' ,'RKB' ,'RLA' ,'RLB' ,'RMA' ,'RMB' ,'RNA' ,'RNB' ,'ROH'    
+    ,'RSH' ,'RSR' ,'RTA' ,'RTB' ,'RUE' ,'RUN' ,'SAU' ,'SCH' ,'SCU' ,'SEA' ,'SEB'    
+    ,'SEP' ,'SER' ,'SEU' ,'SGA' ,'SGB' ,'SIA' ,'SJW' ,'SKA' ,'SKB' ,'SLA' ,'SLB'    
+    ,'SMA' ,'SMB' ,'SMU' ,'SNA' ,'SNB' ,'SPA' ,'SPC' ,'SPF' ,'SPG' ,'STA' ,'STB'    
+    ,'STU' ,'SUG' ,'TAA' ,'TAB' ,'TBT' ,'TDA' ,'TDB' ,'TEA' ,'TEB' ,'TER' ,'TFA'    
+    ,'TFB' ,'TGA' ,'TGB' ,'THA' ,'THB' ,'THF' ,'THP' ,'THR' ,'THY' ,'TKA' ,'TKB'    
+    ,'TLA' ,'TLB' ,'TMA' ,'TMB' ,'TME' ,'TMP' ,'TNA' ,'TNB' ,'TOA' ,'TOB' ,'TPF'    
+    ,'TPO' ,'TQA' ,'TQB' ,'TRA' ,'TRB' ,'TRP' ,'TRU' ,'TTA' ,'TTB' ,'TUA' ,'TUB'    
+    ,'TXA' ,'TXB' ,'TYP' ,'TYR' ,'TYU' ,'TZA' ,'TZB' ,'UBD' ,'UBU' ,'UCD' ,'UCU'    
+    ,'UEA' ,'UEB' ,'UGA' ,'UGB' ,'UJD' ,'UJU' ,'UKA' ,'UKB' ,'ULA' ,'ULB' ,'UMA'    
+    ,'UMB' ,'UME' ,'UNA' ,'UNB' ,'UPD' ,'UPU' ,'URA' ,'URE' ,'USE' ,'UTA' ,'UTB'    
+    ,'UVA' ,'UVB' ,'UWA' ,'UWB' ,'UYA' ,'UYB' ,'VAL' ,'VBD' ,'VBU' ,'VCD' ,'VCU'    
+    ,'VDW' ,'VEA' ,'VEB' ,'VGA' ,'VGB' ,'VJD' ,'VJU' ,'VKA' ,'VKB' ,'VLA' ,'VLB'    
+    ,'VMA' ,'VMB' ,'VNA' ,'VNB' ,'VPD' ,'VPU' ,'VTA' ,'VTB' ,'VVA' ,'VVB' ,'VWA'    
+    ,'VWB' ,'VYA' ,'VYB' ,'WAA' ,'WAB' ,'WAT' ,'WBA' ,'WBB' ,'WBD' ,'WBG' ,'WBU'    
+    ,'WCA' ,'WCB' ,'WCD' ,'WCU' ,'WDA' ,'WDB' ,'WEA' ,'WEB' ,'WFA' ,'WFB' ,'WGA'    
+    ,'WGB' ,'WHA' ,'WHB' ,'WHY' ,'WJA' ,'WJB' ,'WJD' ,'WJU' ,'WKA' ,'WKB' ,'WLA'    
+    ,'WLB' ,'WMA' ,'WMB' ,'WMG' ,'WNA' ,'WNB' ,'WOA' ,'WOB' ,'WPA' ,'WPB' ,'WPD'    
+    ,'WPU' ,'WQA' ,'WQB' ,'WRA' ,'WRB' ,'WTA' ,'WTB' ,'WUA' ,'WUB' ,'WVA' ,'WVB'    
+    ,'WWA' ,'WWB' ,'WXA' ,'WXB' ,'WYA' ,'WYB' ,'WYG' ,'WZA' ,'WZB' ,'XEA' ,'XEB'    
+    ,'XGA' ,'XGB' ,'XKA' ,'XKB' ,'XLA' ,'XLB' ,'XMA' ,'XMB' ,'XNA' ,'XNB' ,'XTA'    
+    ,'XTB' ,'YAA' ,'YAB' ,'YDA' ,'YDB' ,'YEA' ,'YEB' ,'YFA' ,'YFB' ,'YGA' ,'YGB'    
+    ,'YHA' ,'YHB' ,'YIL' ,'YKA' ,'YKB' ,'YLA' ,'YLB' ,'YMA' ,'YMB' ,'YNA' ,'YNB'    
+    ,'YOA' ,'YOB' ,'YQA' ,'YQB' ,'YRA' ,'YRB' ,'YTA' ,'YTB' ,'YTV' ,'YUA' ,'YUB'    
+    ,'YXA' ,'YXB' ,'YZA' ,'YZB' ,'ZAA' ,'ZAB' ,'ZAD' ,'ZAU' ,'ZDA' ,'ZDB' ,'ZDD'    
+    ,'ZDU' ,'ZEA' ,'ZEB' ,'ZFA' ,'ZFB' ,'ZGA' ,'ZGB' ,'ZHA' ,'ZHB' ,'ZKA' ,'ZKB'    
+    ,'ZLA' ,'ZLB' ,'ZMA' ,'ZMB' ,'ZNA' ,'ZNB' ,'ZOA' ,'ZOB' ,'ZQA' ,'ZQB' ,'ZRA'    
+    ,'ZRB' ,'ZRD' ,'ZRU' ,'ZTA' ,'ZTB' ,'ZUA' ,'ZUB' ,'ZXA' ,'ZXB' ,'ZXD' ,'ZXU'    
+    ,'ZZA' ,'ZZB']
+
+    while loop:
+        resname = input('Enter a three letter abbreviation for your molecule: ').upper()
+        if len(resname) != 3:
+            print('\nERROR: Please make sure your residue is only 3 letters long.\n')
+        elif resname.isalpha() is False:
+            print('\nERROR: Chosen abbreviation must contain only letters.\n')
+        elif resname in forbidden_residues:
+            print('\nERROR: Chosen abbreviation already exists in a standard residue library.')
+        else:
+            loop = False
+
+    # Writes namelist.in file
+    # Assumes file should be saved in directory from which the program
+    # is run
+    with open("namelist.in", 'w') as namelist:
+        namelist.write('nconf\n')
+        namelist.write(nconf + '\n')
+        namelist.write('natoms\n')
+        namelist.write(natoms + '\n')
+        namelist.write('charge\n')
+        namelist.write(charge + '\n')
+        namelist.write('multiplicity\n')
+        namelist.write(multiplicity + '\n')
+        namelist.write('resname\n')
+        namelist.write(resname + '\n\n')
+        for i in range(conf_num):
+            namelist.write(str(res_name) + str(i + 1) + '\n')
 
 
 
