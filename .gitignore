@@ -1,0 +1,12 @@
+.DS_Store
+
+.gitattributes
+.git/
+
+GeomRespCreator_job1.f90
+GeomRespCreator_job2.f90
+GeomRespCreator_job3.f90
+GeomRespCreator_job4.f90
+
+WorkingDirectory/
+
