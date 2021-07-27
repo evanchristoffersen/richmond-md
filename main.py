@@ -126,8 +126,8 @@ def build_directory_space():
         os.mkdir('{}/DFT/templates'.format(project))
 
         os.mkdir('{}/MD'.format(project))
+        os.mkdir('{}/MD/geometries'.format(project))
         os.mkdir('{}/MD/templates'.format(project))
-        os.mkdir('{}/MD/conformer_geometries'.format(project))
 
     cwd = os.getcwd()
     name = get_project_name()
