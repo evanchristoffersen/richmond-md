@@ -27,15 +27,13 @@ def fortran_format(n):
     """ Formats a string of digits to look like the scientific
     notation in fortran.
 
-    PARAMETERS
-    ----------
+    --- PARAMETERS ---
     n : string
         The number that needs to be converted to fortran's scientific
         notation. Must be convertable to a float type for function to
         work (i.e. string must not contain any letters).
 
-    RETURNS
-    -------
+    --- RETURNS ---
     out : string
         The number formatted in fortran scientific notation is returned
         as a string.
@@ -73,98 +71,78 @@ def fortran_format(n):
 
 
 def write_esp_dat(conf):
-    """ This function uses the contents of the "conformer_resp.out" file
-    to write the corresponding "conformer_esp.dat" file. Depending on
+    """ This function uses the contents of the {}_resp.out file to write
+    the corresponding {}_esp.dat file for each conformer. Depending on
     the size of the conformer and the size of its resp.out file, this
     function may take a few seconds to run per conformer. Returns None.
 
-    PARAMETERS
-    ----------
+    --- PARAMETERS ---
     conf : string
         The three letter prefix + integer conformer index used to
         identify the different conformers.
 
     """
-    # Make sure the "_resp..out" file exists, and that the "_esp.dat" 
-    # file will not be overwritten
-    if os.path.isfile(conf + '_resp.out') is not True:
-        raise Exception('File {} is missing!'.format(conf + '_resp.out'))
-    if os.path.isfile(conf + '_esp.dat') is True:
-        raise Exception('File {} already exists!'.format(conf + '_esp.dat'))
-
-    # Retrieves the two ngrid values from the resp.out file (the number
-    # of atoms in the molecule, and the number of points involved in
-    # the electstatic potential fit). Subtracts the number of atoms from 
-    # the number of points, and then appends the number of atoms to the 
-    # front of the result. This modified ngrid value is written to the 
-    # esp.dat file.
-    ngrid = []
-    with open(conf + '_resp.out', 'r') as f, \
-         open(conf + '_esp.dat', 'a') as esp:
-        for line in f:
-            if re.search('NGrid ', line):
-                lines = line.split()
-                ngrid.append(line.split()[2])
-        ngrid_esp = ngrid[0] + str(int(ngrid[1]) - int(ngrid[0]))
-        spacing = 4 + len(ngrid_esp)
-        # Four empty spaces must always lead this number, but this 
-        # number is not consistently the same length
-        esp.write('{v:>{s}}\n'.format(v=ngrid_esp,s=spacing))
-
     # Conversion factor from Angstroms to Bohrs
     cnv_factor = 0.529177249
 
-    # Retrieves the "Atomic Centers" from the "_resp.out" file and 
-    # writes them to the "_esp.dat" file in fortran scientific notation
+    ngrid_raw = []
     atomic_centers = []
-    with open(conf + '_resp.out', 'r') as f, \
-         open(conf + '_esp.dat', 'a') as esp:
-        for line in f:
-            if re.search('Atomic Center ', line):
-                atomic_centers.append(line.split()[5:8])
-        for i in range(0,len(atomic_centers)):
-            x = fortran_format(float(atomic_centers[i][0]) / cnv_factor)
-            y = fortran_format(float(atomic_centers[i][1]) / cnv_factor)
-            z = fortran_format(float(atomic_centers[i][2]) / cnv_factor)
-            esp.write('{:>32}{:>16}{:>16}\n'.format(x, y, z))
+    # ulimit -n : maximum number of files that can be open simultaneously
+    # "ESP Fit" and "Fit" values are written to temporary files. Seemed risky
+    # storing tens of thousands of values in memory
+    try:
+        with open(conf + '_resp.out', 'r') as f, \
+             open(conf + '_esp.dat', 'w') as out \
+             open('tmp00.txt', 'w') as b, \
+             open('tmp01.txt', 'w') as c:
+            for line in f:
+                if re.search('NGrid ', line):
+                    ngrid_raw.append(line.split()[2])
+                elif re.search('Atomic Center ', line):
+                    atomic_centers.append(line.split()[5:8])
+                elif re.search('ESP Fit', line):
+                    b.write(line)
+                elif re.search('Fit    ', line):
+                    c.write(line)
+                else:
+                    pass
 
-    # Writes the "ESP Fit Center" and "Fit" values from the "_resp.out" 
-    # file to two temporary files, respectively, after first confirming 
-    # that the files don't already exist. Trying to store this much data
-    # in memory (i.e. in a list) could be risky.
-    try: os.remove('tmp00.txt')
-    except: pass
-    try: os.remove('tmp01.txt')
-    except: pass
+            ngrid_out = ngrid_raw[0] + str(int(ngrid_raw[1]) - int(ngrid_raw[0]))
+            # Four empty spaces must always lead ngrid_out in {}_esp.dat
+            spacing = 4 + len(ngrid_out)
+            out.write('{v:>{s}}\n'.format(v=ngrid_out,s=spacing))
 
-    with open(conf + '_resp.out', 'r') as f, \
-         open('tmp00.txt', 'w') as b, \
-         open('tmp01.txt', 'w') as c:
-        for line in f:
-            if re.search('ESP Fit', line):
-                b.write(line)
-            if re.search('Fit    ', line):
-                c.write(line)
+            for i in range(0,len(atomic_centers)):
+                x = fortran_format(float(atomic_centers[i][0]) / cnv_factor)
+                y = fortran_format(float(atomic_centers[i][1]) / cnv_factor)
+                z = fortran_format(float(atomic_centers[i][2]) / cnv_factor)
+                out.write('{:>32}{:>16}{:>16}\n'.format(x, y, z))
 
-    # Formats and writes the content of the temporary files to the 
-    # "_esp.dat" file. First column is the "Fit" value, followed by the
-    # "ESP Fit Center" values in the remaining three columns.
-    with open('tmp00.txt', 'r') as b, \
-         open('tmp01.txt', 'r') as c, \
-         open(conf + '_esp.dat', 'a') as esp:
-        for line_b, line_c in zip(b, c):
-            esp_fit = line_b.split()
-            fit = line_c.split()
-            w = fortran_format(float(fit[2]))
-            x = fortran_format(float(esp_fit[6]) / cnv_factor)
-            y = fortran_format(float(esp_fit[7]) / cnv_factor)
-            z = fortran_format(float(esp_fit[8]) / cnv_factor)
-            esp.write('{:>16}{:>16}{:>16}{:>16}\n'.format(w, x, y, z))
+    except OSError:
+        print('File {}_resp.out cannot be read.\n'.format(conf))
+        print('File creation skipped for {}_esp.dat\n'.format(conf))
 
-    # Removes the temporary files from the directory
-    os.remove('tmp00.txt')
-    os.remove('tmp01.txt')
-    return None
+    except:
+        print('Unexpected error during {}_esp.dat file creation.\n'.format(conf))
+        raise
+
+    else:
+        with open('tmp00.txt', 'r') as b, \
+             open('tmp01.txt', 'r') as c, \
+             open(conf + '_esp.dat', 'a') as out:
+            for line_b, line_c in zip(b, c):
+                esp_fit = line_b.split()
+                fit = line_c.split()
+                w = fortran_format(float(fit[2]))
+                x = fortran_format(float(esp_fit[6]) / cnv_factor)
+                y = fortran_format(float(esp_fit[7]) / cnv_factor)
+                z = fortran_format(float(esp_fit[8]) / cnv_factor)
+                out.write('{:>16}{:>16}{:>16}{:>16}\n'.format(w, x, y, z))
+
+        # Removes the temporary files from the directory
+        os.remove('tmp00.txt')
+        os.remove('tmp01.txt')
+        return None
 
 
 def check_convergence(f='punch'):
@@ -172,27 +150,24 @@ def check_convergence(f='punch'):
     "punch" file to the "qopt" column. When all q0 = qopt, this
     indicates that the resp fitting has converged.
 
-    PARAMETERS
-    ----------
+    --- PARAMETERS ---
     f : string
         Filename (should always just be "punch")
 
-    RETURNS
-    -------
+    --- RETURNS ---
     True : if converged
     False : if not converged
 
     """
-    # Check if a punch file exists
-    if os.path.isfile(f) is not True:
-        raise FileNotFoundError('File {} is missing!\n'.format(f))
-
     # Open punch file and save lines to memory (isolate items indexed
     # at '2' and '3' where applicable
     punch = []
-    with open(f, 'r') as punchfile:
-        for line in punchfile:
-            punch.append(line.split()[2:4])
+    try:
+        with open(f, 'r') as punchfile:
+            for line in punchfile:
+                punch.append(line.split()[2:4])
+    except:
+        raise
 
     # Delete the first 11 lines and the last 5 lines
     del punch[:11]

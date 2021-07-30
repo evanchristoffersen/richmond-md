@@ -41,15 +41,12 @@ def get_integer(prompt, negative = False):
     while True:
         try:
             out = int(input(prompt))
-            if len(out) == 0:
-                print('\nERROR: Enter an integer value.\n')
-            elif int(out) < 0 and negative == False:
+            if int(out) < 0 and negative == False:
                 print('\nERROR: Enter a positive integer value.\n')
             else:
                 return str(out)
         except:
             print('\nERROR: Enter an integer value.\n')
-
 
 # def check_template_exists(filepath):
 #    if os.path.exists(filepath) == False:
@@ -69,25 +66,60 @@ def get_integer(prompt, negative = False):
 #        return print_template()
 
 def print_file_contents(filepath):
-    print('\nReview the contents of your file:\n')
+    print('\nReview contents of {}:\n'.format(filepath))
     with open(filepath, 'r') as f:
         for line in f:
             print(line)
-    input('\nPress any key to continue, or [CTRL C] to quit.\n')
-    return None
+    q = input('\nPress any key to continue, or [q] to quit.\n')
+    if q == 'Q' or q == 'q':
+        sys.exit('Exiting program after reviewing {} file contents.\n'.format(filepath))
+    else:
+        return None
 
 def make_inp_template(filepath,resname,chrg,mult,templatetype)
     if templatetype == 'opt':
-    elif templatetype == 'hf':
-    elif templatetype == 'freq':
-    elif templatetype == 'anharm':
-    elif templatetype == 'geom':
         with open(filepath, 'w') as f:
             f.write("%NProcShared=12\n")
             f.write("%mem=12GB\n")
             f.write("%rwf=/tmp/{}_opt/,-1\n".format(resname))
             f.write("%chk=/tmp/{}_opt/{}_opt.chk\n".format(resname))
-            f.write("#T HF/6-31G* OPT(Tight) scf(tight,MaxCycles=1000)\n\n")
+            f.write("#T B3LYP/6-311++G(2d,2p) OPT(Tight) SCF(Tight,MaxCycles=1000)\n\n")
+            f.write("Gaussian09 geometry optimization at B3LYP/6-311++G(2d,2p)\n\n")
+            f.write("{0} {1}\n".format(chrg,mult))
+    elif templatetype == 'hf':
+        with open(filepath, 'w') as f:
+            f.write("%NProcShared=12\n")
+            f.write("%mem=12GB\n")
+            f.write("%rwf=/tmp/{}_hf/,-1\n".format(resname))
+            f.write("%chk=/tmp/{}_hf/{}_hf.chk\n".format(resname))
+            f.write("#P HF/6-31g* OPT(Tight) SCF(Tight,MaxCycles=1000)\n\n")
+            f.write("Gaussian09 hartree fock geometry optimization at HF/6-31g*\n\n")
+            f.write("{0} {1}\n".format(chrg,mult))
+    elif templatetype == 'freq':
+        with open(filepath, 'w') as f:
+            f.write("%NProcShared=12\n")
+            f.write("%mem=12GB\n")
+            f.write("%rwf=/tmp/{}_freq/,-1\n".format(resname))
+            f.write("%chk=/tmp/{}_freq/{}_freq.chk\n".format(resname))
+            f.write("#T B3LYP/6-311++G(2d,2p) Freq(HPModes) SCF(Tight,MaxCycles=1000)\n\n")  
+            f.write("Gaussian09 harmonic vibrational frequency calculation at B3LYP/6-311++G(2d,2p)\n\n")
+            f.write("{0} {1}\n".format(chrg,mult))
+    elif templatetype == 'anharm':
+        with open(filepath, 'w') as f:
+            f.write("%NProcShared=12\n")
+            f.write("%mem=12GB\n")
+            f.write("%rwf=/tmp/{}_anharm/,-1\n".format(resname))
+            f.write("%chk=/tmp/{}_anharm/{}_anharm.chk\n".format(resname))
+            f.write("#T B3LYP/6-311++G(2d,2p) Freq(Anharmonic) SCF(Tight,MaxCycles=1000)\n\n")
+            f.write("Gaussian09 anharmonic vibrational frequency calculation at B3LYP/6-311++G(2d,2p)\n\n")
+            f.write("{0} {1}\n".format(chrg,mult))
+    elif templatetype == 'geom':
+        with open(filepath, 'w') as f:
+            f.write("%NProcShared=12\n")
+            f.write("%mem=12GB\n")
+            f.write("%rwf=/tmp/{}_geom/,-1\n".format(resname))
+            f.write("%chk=/tmp/{}_geom/{}_geom.chk\n".format(resname))
+            f.write("#T HF/6-31G* OPT(Tight) SCF(Tight,MaxCycles=1000)\n\n")
             f.write("Gaussian09 geometry optimization at HF/6-31G*\n\n")
             f.write("{0} {1}\n".format(chrg,mult))
     elif templatetype == 'resp':
@@ -96,7 +128,7 @@ def make_inp_template(filepath,resname,chrg,mult,templatetype)
             f.write("%mem=12GB\n")
             f.write("%rwf=/tmp/{}_resp/,-1\n".format(resname))
             f.write("%chk=/tmp/{}_resp/{}_resp.chk\n".format(resname))
-            f.write("#P B3LYP/c-pVTZ scf(tight,MaxCycles=1000) Pop=MK IOp(6/33=2,6/41=10,6/42=17)\n\n")
+            f.write("#P B3LYP/c-pVTZ SCF(Tight,MaxCycles=1000) Pop=MK IOp(6/33=2,6/41=10,6/42=17)\n\n")
             f.write("Gaussian09 single point electrostatic potential calculation at B3LYP/c-pVTZ\n\n")
             f.write("{0} {1}\n".format(chrg,mult))
     else:
@@ -183,14 +215,14 @@ def make_inp_file(resname,conf,inptype):
         f.write('\n')
     return None
 
-def write_submission_script(f,resname,inptype):
-    """ Creates the .pbs submission script for "_geom.inp" or
-    "_resp.inp" files. Returns None.
+def write_submission_script(filepath,resname,inptype):
+    """ Creates the .pbs submission script for any .inp files.
+    Returns None.
 
     PARAMETERS
     ----------
-    f : string
-        Filename (the .pbs file written by this function)
+    filepath : string
+        Path + name of the .pbs file written by this function.
     resname : string
         Three letter prefix for the molecule
     inptype : string
@@ -198,23 +230,20 @@ def write_submission_script(f,resname,inptype):
         file for a corresponding "_geom.inp" or "_resp.inp" file.
 
     """
-    # Check if file exists (prevents overwrite)
-    if os.path.isfile(f) is True:
-        raise Exception('File {} already exists!\n'.format(f))
-    # Append header to .pbs submission file
-    with open(f, 'a') as f:
+    with open(filepath, 'w') as f:
         f.write("#!/bin/bash\n")
-        f.write("#SBATCH --partition=preempt \n")
+        f.write("#SBATCH --partition={} \n".format())
         f.write("#SBATCH --nodes=1\n")
         f.write("#SBATCH --ntasks-per-node=12\n")
         f.write("#SBATCH --export=ALL\n")
-        f.write("#SBATCH --time=0-24:00:00\n")
+        f.write("#SBATCH --time=0-{}:00:00\n".format())
         f.write("#SBATCH --error={0}_opt.err\n\n".format(resname,inptype))
-        f.write("test -d /tmp/{0}_opt || mkdir -v /tmp/{0}_opt\n\n".format(resname,inptype))
+        f.write("test -d /tmp/{0}_{1} || mkdir -v /tmp/{0}_{1}\n\n".format(resname,inptype))
         f.write("module load gaussian\n\n")
+        f.write("which g09\n\n")
         f.write("g09 < {0}_{1}.inp > {0}_{1}.out\n\n".format(resname,inptype))
-        f.write("cp -pv /tmp/{0}_opt/{0}_opt.chk .\n\n".format(resname))
-        f.write("rm -rv /tmp/{0}_opt\n\n".format(resname))
+        f.write("cp -pv /tmp/{0}_{1}/{0}_{1}.chk .\n\n".format(resname,inptype))
+        f.write("rm -rv /tmp/{0}_{1}\n\n".format(resname,inptype))
     return None
 
 
@@ -228,5 +257,6 @@ def check_termination(filepath):
                 return True                                                     
     print('{} did not terminate correctly!'.format(filepath))                   
     return False 
+
 
 

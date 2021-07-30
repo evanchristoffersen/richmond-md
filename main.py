@@ -117,28 +117,25 @@ def build_directory_space():
         
         """
         os.mkdir(project)
-
         os.mkdir('{}/DFT'.format(project))
         os.mkdir('{}/DFT/conformer_files'.format(project))
         os.mkdir('{}/DFT/geometries'.format(project))
         os.mkdir('{}/DFT/initial_optimization'.format(project))
         os.mkdir('{}/DFT/libraries'.format(project))
         os.mkdir('{}/DFT/templates'.format(project))
-
         os.mkdir('{}/MD'.format(project))
         os.mkdir('{}/MD/geometries'.format(project))
         os.mkdir('{}/MD/templates'.format(project))
 
-    cwd = os.getcwd()
     name = get_project_name()
     build_tree(name)
-    os.chdir(cwd)
 
 
 
 def main_menu():
-    """
-    UNFINISHED
+    """ Display's the main menu for this program, and handles the user's
+    choices based on the menu options.
+
     """
     def print_menu():
         title = "MAIN MENU"
@@ -167,27 +164,19 @@ def main_menu():
             elif choice == '4':
                 help(main_menu)
             elif choice == '5':
-                raise SystemExit
+                sys.exit('Program halted by user interrupt.\n')
             else:
-                input('ERROR: {} is not at option. Try again.\n'.format(choice))
+                input('"{}" is not at option. Try again.\n'.format(choice))
 
     get_choice()
 
 
 def main():
-    """ 
-    UNFINISHED
+    """ Function called by __main__
+
     """
     main_menu()
 
 if __name__=="__main__":
     main()
-
-# if __name__=="__main__":
-#     try:
-#         main()
-#     except KeyboardInterrupt:
-#         print('User keyboard interrupt initiated. Exiting program...')
-#     e
-
 
