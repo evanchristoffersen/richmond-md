@@ -116,20 +116,37 @@ def build_directory_space():
             The head directory/project name.
         
         """
-        os.mkdir(project)
-        os.mkdir('{}/DFT'.format(project))
-        os.mkdir('{}/DFT/conformer_files'.format(project))
-        os.mkdir('{}/DFT/geometries'.format(project))
-        os.mkdir('{}/DFT/initial_optimization'.format(project))
-        os.mkdir('{}/DFT/libraries'.format(project))
-        os.mkdir('{}/DFT/templates'.format(project))
-        os.mkdir('{}/MD'.format(project))
-        os.mkdir('{}/MD/geometries'.format(project))
-        os.mkdir('{}/MD/templates'.format(project))
+        directorylist = [
+            project,
+            '{}/DFT'.format(project),
+            '{}/DFT/conformer_files'.format(project),
+            '{}/DFT/geometries'.format(project),
+            '{}/DFT/libraries'.format(project),
+            '{}/DFT/templates'.format(project),
+            '{}/MD'.format(project),
+            '{}/MD/geometries'.format(project),
+            '{}/MD/templates'.format(project)]
+        for item in directorylist:
+            try: os.mkdir(item)
+            except FileExistsError: pass
+        return None
 
     name = get_project_name()
     build_tree(name)
+    return None
 
+
+def find_path(searchquery):
+    """
+
+    """
+    results = []
+    for paths, dirs, files in os.walk('.', topdown=False)
+        for f in files:
+            out = os.path.join(paths, f)
+            if '{}'.format(searchquery) in out:
+                results.append(out)
+    return results
 
 
 def main_menu():
@@ -139,15 +156,15 @@ def main_menu():
     """
     def print_menu():
         title = "MAIN MENU"
-        formatting = int( (78 - len(title)) / 2 ) * "-"
-        print(formatting, title, formatting, "\n")
-        print("I want to...\n")
-        print("1. Set up my project directory tree.")
-        print("2. Build conformer libraries and run electronic structure calculations.")
-        print("3. Build the force fields for molecular dynamices simulations (RESP fitting).")
-        print("4. Read more about what this program does.")
-        print("5. Exit the program.\n")
-        print(79 * "-", "\n")
+        formatting = int((78 - len(title)) / 2) * '-'
+        print(formatting, title, formatting, '\n')
+        print('I want to...\n')
+        print('1. Set up my project directory tree.')
+        print('2. Build conformer libraries and run electronic structure calculations.')
+        print('3. Build the force fields for molecular dynamices simulations (RESP fitting).')
+        print('4. Read more about these menu options.')
+        print('5. Exit the program.\n')
+        print(79 * '-', '\n')
 
     def get_choice():
         while True:
@@ -158,13 +175,13 @@ def main_menu():
             if choice == '1':
                 return build_directory_space()
             elif choice == '2':
-                return
+                return dft_menu()
             elif choice == '3':
-                return resp.main_menu()
+                return md_menu()
             elif choice == '4':
                 help(main_menu)
             elif choice == '5':
-                sys.exit('Program halted by user interrupt.\n')
+                sys.exit('Program halted by user.\n')
             else:
                 input('"{}" is not at option. Try again.\n'.format(choice))
 
