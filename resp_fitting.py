@@ -1,15 +1,27 @@
 #!/usr/bin/env python
 
-""" A collection of functions for detecting, reading, and writing the
-namelist.in file.
+""" 
 
 """
 
+
+
+import glob # File selection wildcard *
 import os # Change directories and prevent file overwrite
+import re # Regular expressions (i.e. grep)
+import shutil # Move files between directories
+import subprocess as sp # Run shell commands
+import sys # Error management
+
+# from . import namelist
+import namelist
+
 
 __authors__ = 'Evan Christoffersen', 'Konnor Jones'
 # __license__
 # __version__
+
+
 
 def detectfile(f='namelist.in'):
     """ Searches the current working directory for the specified file 
@@ -221,3 +233,201 @@ def readfile(f="namelist.in"):
     del namelist[10:]
     params=dict(zip(namelist[::2], namelist[1::2]))
     return params,confnames
+
+def write_esp_dat(conf):
+    """ This function uses the contents of the {}_resp.out file to write
+    the corresponding {}_esp.dat file for each conformer. Depending on
+    the size of the conformer and the size of its resp.out file, this
+    function may take a few seconds to run per conformer. Returns None.
+
+    --- PARAMETERS ---
+    conf : string
+        The three letter prefix + integer conformer index used to
+        identify the different conformers.
+
+    """
+    # Conversion factor from Angstroms to Bohrs
+    cnv_factor = 0.529177249
+
+    ngrid_raw = []
+    atomic_centers = []
+    # ulimit -n : maximum number of files that can be open simultaneously
+    # "ESP Fit" and "Fit" values are written to temporary files. Seemed risky
+    # storing tens of thousands of values in memory
+    try:
+        with open(conf + '_resp.out', 'r') as f, \
+             open(conf + '_esp.dat', 'w') as out \
+             open('tmp00.txt', 'w') as b, \
+             open('tmp01.txt', 'w') as c:
+            for line in f:
+                if re.search('NGrid ', line):
+                    ngrid_raw.append(line.split()[2])
+                elif re.search('Atomic Center ', line):
+                    atomic_centers.append(line.split()[5:8])
+                elif re.search('ESP Fit', line):
+                    b.write(line)
+                elif re.search('Fit    ', line):
+                    c.write(line)
+                else:
+                    pass
+
+            ngrid_out = ngrid_raw[0] + str(int(ngrid_raw[1]) - int(ngrid_raw[0]))
+            # Four empty spaces must always lead ngrid_out in {}_esp.dat
+            spacing = 4 + len(ngrid_out)
+            out.write('{v:>{s}}\n'.format(v=ngrid_out,s=spacing))
+
+            for i in range(0,len(atomic_centers)):
+                x = fortran_format(float(atomic_centers[i][0]) / cnv_factor)
+                y = fortran_format(float(atomic_centers[i][1]) / cnv_factor)
+                z = fortran_format(float(atomic_centers[i][2]) / cnv_factor)
+                out.write('{:>32}{:>16}{:>16}\n'.format(x, y, z))
+
+    except OSError:
+        print('File {}_resp.out cannot be read.\n'.format(conf))
+        print('File creation skipped for {}_esp.dat\n'.format(conf))
+
+    except:
+        print('Unexpected error during {}_esp.dat file creation.\n'.format(conf))
+        raise
+
+    else:
+        with open('tmp00.txt', 'r') as b, \
+             open('tmp01.txt', 'r') as c, \
+             open(conf + '_esp.dat', 'a') as out:
+            for line_b, line_c in zip(b, c):
+                esp_fit = line_b.split()
+                fit = line_c.split()
+                w = fortran_format(float(fit[2]))
+                x = fortran_format(float(esp_fit[6]) / cnv_factor)
+                y = fortran_format(float(esp_fit[7]) / cnv_factor)
+                z = fortran_format(float(esp_fit[8]) / cnv_factor)
+                out.write('{:>16}{:>16}{:>16}{:>16}\n'.format(w, x, y, z))
+
+        # Removes the temporary files from the directory
+        os.remove('tmp00.txt')
+        os.remove('tmp01.txt')
+        return None
+
+
+def check_punch_convergence(f='punch'):
+    """ This function compares the values in the "q0" column of a
+    "punch" file to the "qopt" column. When all q0 = qopt, this
+    indicates that the resp fitting has converged.
+
+    --- PARAMETERS ---
+    f : string
+        Filename (should always just be "punch")
+
+    --- RETURNS ---
+    True : if converged
+    False : if not converged
+
+    """
+    # Open punch file and save lines to memory (isolate items indexed
+    # at '2' and '3' where applicable
+    punch = []
+    try:
+        with open(f, 'r') as punchfile:
+            for line in punchfile:
+                punch.append(line.split()[2:4])
+    except:
+        raise
+
+    # Delete the first 11 lines and the last 5 lines
+    del punch[:11]
+    del punch[-6:]
+
+    # Make separate lists for the q0 and qopt values
+    q0 = []
+    qopt = []
+    for q in punch:
+        q0.append(q[0])
+        qopt.append(q[1])
+
+    # Determine convergence
+    if q0 == qopt is True:
+        return True
+    else:
+        return False
+
+
+def write_resp_in(nconfs,iqopt,ihfree,qwt,f='resp.in'):
+    """
+    UNFINISHED
+    """
+    if os.path.isfile(f) is True:
+        raise Exception('File {} already exists!\n'.format(f))
+
+    with open(f, 'a') as outfile:
+        # Writes the header options
+        outfile.write("Resp charges for organic molecule\n\n")
+        outfile.write(" &cntrl\n\n")
+        outfile.write(" nmol = {},\n".format(nconfs))
+        outfile.write(" ihfree = {},\n".format(ihfree))
+        outfile.write(" iqopt = {},\n".format(iqopt))
+        outfile.write(" qwt = 0.00{},\n\n".format(qwt))
+        outfile.write(" &end\n")
+
+        # Writes the first three lines of each molecule table
+        for i in range(0,nconf):
+            outfile.write("    1.0\n")
+            outfile.write("{}".format(conf[i]))
+            outfile.write("    charge    numberofatoms")
+
+            # Writes the atom identities and restrictions for each molecule
+            for j in range(0,numberofatoms):
+                outfile.write("    atomidentity[j]    0")
+            outfile.write("\n")
+
+        # Writes the table of conformers and atoms
+        conf = 1
+        atom = 1
+        for i in range(0,natom):
+            outfile.write('\n{n:>5d}\n'.format(n=nconf))
+            for j in range(0,nconf):
+                outfile.write('{n:>5d}{m:>5d}'.format(n=conf,m=atom))
+                conf += 1
+            conf = 1
+            atom += 1
+
+
+def write_leap_in(resname,f='leap.in'):
+    """ Writes the leap.in file from scratch.
+    UNFINISHED
+    """
+    if os.path.isfile(f) is True:
+        raise Exception('File {} already exists!\n'.format(f))
+    with open(f, 'a') as outfile:
+        outfile.write("set default IPOL 1\n\n")
+        outfile.write("source leaprc.ff02pol.r1\n\n")
+        outfile.write("loadamberparams {}.frcmod\n\n".format(resname))
+        outfile.write("x = loadmol2 Temp.mol2\n\n")
+        outfile.write("check x\n")
+        outfile.write("saveAmberParmPol x prmtop prmcrd\n\n")
+        outfile.write("quit")
+    return None
+
+
+def write_sander_in():
+    """ Writes the sander.in file from scratch.
+    UNFINISHED
+    """
+    if os.path.isfile(f) is True:
+        raise Exception('File {} already exists!\n'.format(f))
+    with open(f, 'a') as outfile:
+        outfile.write("Title\n")
+        outfile.write(" &cntrl\n")
+        outfile.write("  irest=0,ntx=1,\n")
+        outfile.write("  imin=1,maxcyc=1,\n")
+        outfile.write("  ntc=1,ntf=1,\n")
+        outfile.write("  cut=999.0,\n")
+        outfile.write("  ntpr=100,ntwx=0,ntwv=0,ntwe=0,\n")
+        outfile.write("  ipol=1,iesp=1,\n")
+        outfile.write("  igb=0,ntb=0,\n")
+        outfile.write(" &end\n")
+        outfile.write(" &ewald\n")
+        outfile.write("  indmeth=1\n")
+        outfile.write(" &end")
+    return None
+
+
