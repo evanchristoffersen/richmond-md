@@ -58,36 +58,6 @@ def main_menu():
 
     get_choice()
 
-def main_menu():
-    """
-
-    """
-
-    def print_menu():
-        title = "GAUSSIAN MENU"
-        formatting = int((78 - len(title)) / 2) * '-'
-        print(formatting, title, formatting, '\n')
-        print('I want to...\n')
-        print('1. Write and submit calculations to Gaussian.\n')
-        print('2. Check output files for correct termination.\n')
-        print('3. Pull molecular coordinates from output files.\n')
-        print('#. Exit the program.\n')
-        print(79 * '-', '\n')
-
-    def get_choice():
-        while True:
-            print_menu()
-            choice = input('Enter your choice [1-4]: ')
-            print()
-
-            if choice == '1':
-            elif choice == '2':
-            elif choice == '3':
-            elif choice == '4':
-            elif choice == '#':
-                sys.exit('Program halted by user.\n') 
-            else:
-                input('"{}" is not an option. Try again.\n'.format(choice))
 
 
 def main_menu():

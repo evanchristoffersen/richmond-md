@@ -13,121 +13,12 @@ import shutil # Move files between directories
 import subprocess as sp # Run shell commands
 import sys # Error management
 
-from main import find_dir_paths
+from main import find_file_paths,\
+                 build_directory_space
 
 __authors__ = "Evan Christoffersen", "Konnor Jones"
 # __license__
 # __version__
-
-def flatten_list(listarg):
-
-    if type(listarg) != list:
-        return None
-
-    out = [item for sublist in listarg for item in sublist]
-    return out
-
-
-
-def remove_duplicate_items(listarg):
-
-    if type(listarg) != list:
-        return None
-
-    out = list(set(listarg))
-    return out
-
-
-
-def remove_empty_items(listarg):
-
-    if type(listarg) != list:
-        return None
-
-    out = [item for item in listarg if "" is not item]
-    return out
-
-
-
-def convert_item_type(listarg,convert):
-
-    if type(listarg) != list:
-        return None
-
-    try:
-        if convert == 'str':
-            out = [str(item) for item in listarg]
-        elif convert == 'int':
-            out = [int(item) for item in listarg]
-        else:
-            out = [float(item) for item in listarg]
-        return out
-    except ValueError:
-        return None
-
-
-def get_user_selections():
-
-    msg = (
-"Please make your selection(s) below.\n\n"
-"Note: Entry should contain integers and acceptable delimiters only.\n"
-"      Spaces not required. All other non-numeric characters other than\n" 
-"      the delimiters listed below, are invalid and ignored.\n\n"
-"Delimiter : comma ',' (Denotes separate entries)\n"
-"Optional  : dash  '-' (Denotes a range of entries)\n\n"
-"Example input: 1, 3-6, 9 (User has selected items 1, 3, 4, 5, 6, and 9)\n"
-    )
-
-    print(msg)
-    rawinput = input("Enter selection here: ")
-
-    validinput = re.search(r"^[\s0-9,-]+$",rawinput)
-    if not validinput:
-        print("Input not valid!\n")
-        return None
-
-    # Removes whitespace and delimits by commas
-    processinput = rawinput.replace(' ','').split(',')
-    processinput = remove_empty_items(processinput)
-
-    # Separates valid ranged selections for processing
-    validranges = [
-        item for item in processinput if "-" in item
-        and item.count('-') == 1
-        and not item.startswith('-')
-        and not item.endswith('-')
-    ]
-
-    selections = [int(item) for item in processinput if "-" not in item]
-
-    out = []
-
-    if len(validranges) > 0:
-        # Each sublist in "parsed" contains initial and final value of range
-        parsed = []
-        for i in range(len(validranges)):
-            parsed.append(validranges[i].split("-"))
-
-        # Each sublist contains each value of a range explcitly written
-        interpolated = []
-        for i in range(len(parsed)):
-            startindex = int(parsed[i][0])
-            endindex = int(parsed[i][1]) + 1
-            interpolated.append(list(range(startindex,endindex)))
-
-        ranges = flatten_list(interpolated)
-        out.append(ranges)
-
-    out.append(selections)
-    out = flatten_list(out)
-    out = remove_duplicate_items(out)
-    out.sort()
-    out = convert_item_type(out,'str')
-    return out
-
-
-
-
 
 
 # def choose_paths(paths):
@@ -145,69 +36,307 @@ def get_user_selections():
 # 
 # def display_paths(
 
+# 
+# def find_template_folder():
+#     # Find all possible subdirectories called "templates/"
+#     templatepath = find_dirpath("templates")
+# 
+#     # If more than one "templates/" directory is found allow user to choose
+#     if len(templatepath) > 1:
+#         print("Multiple directories named templates/ detected:\n")
+# 
+#         while True:
+# 
+#             # Print all "templates/" directories
+#             for i,item in enumerate(templatepath):
+#                 print(str(i) + ":", templatepath[i])
+# 
+#             # Give user option to exit if desired folder not found
+#             print(str(len(templatepath)) + ":", "None of the above.")
+# 
+#             q = input(f"\nChoose the correct directory [0-{len(templatepath)}]: ")
+# 
+#             # Handling user input
+#             try:
+#                 if int(q) < len(templatepath):
+#                     templatepath = templatepath[int(q)]
+#                     return templatepath
+# 
+#                 elif int(q) == len(templatepath):
+#                     msg = (
+# "Reasons your templates/ directory may be missing from this list:\n\n"
+# "1. The templates/ directory hasn't been created yet.\n"
+# "2. The templates/ directory is not one of the subdirectories in the\n"
+# "   directory tree in which this script was run.\n"
+# "3. The directory holding your template files is called something other\n"
+# "   than 'templates'\n\n"
+#                     )
+#                     print(msg)
+#                     input("\nPress any key to exit.\n")
+#                     sys.exit("FileNotFoundError: User exit.")
+# 
+#                 # If user enters integer not in list
+#                 else:
+#                     print(f"\n'{q}' is not an option. Try again.\n")
+# 
+#             # If user enters something other than an integer
+#             except ValueError:
+#                 print(f"\n'{q}' is not an option. Try again.\n")
+# 
+#     # If no "templates/" directory is found
+#     elif len(templatepath) == 0:
+#         sys.exit("FilelNotFoundError: No templates/ folder detected.")
+# 
+#     else:
+#         return templatepath
 
-def find_template_folder():
-    # Find all possible subdirectories called "templates/"
-    templatepath = find_dirpath("templates")
+def match_inp_pbs():
+    find_file_paths() # for .inp
+    find_file_paths() # for .pbs
+    # Check to see if any of the .inp files are missing their .pbs counterparts
+    # or vice-versa
 
-    # If more than one "templates/" directory is found allow user to choose
-    if len(templatepath) > 1:
-        print("Multiple directories named templates/ detected:\n")
 
-        while True:
 
-            # Print all "templates/" directories
-            for i,item in enumerate(templatepath):
-                print(str(i) + ":", templatepath[i])
 
-            # Give user option to exit if desired folder not found
-            print(str(len(templatepath)) + ":", "None of the above.")
 
-            q = input(f"\nChoose the correct directory [0-{len(templatepath)}]: ")
+def flatten_list(listarg):
+    """ Converts a list of lists into a list: 
+    [[1, 2, 3], [4, 5, 6]] --> [1, 2, 3, 4, 5, 6]. 
+    Note: this function is rudimentary in scope, and should only be 
+    expected to work properly if list consists of only sublists that 
+    are all the nested the same amount.
 
-            # Handling user input
-            try:
-                if int(q) < len(templatepath):
-                    templatepath = templatepath[int(q)]
-                    return templatepath
+    --- PARAMETERS ---
+    listarg : list
+        The input list of sublists that needs converting.
 
-                elif int(q) == len(templatepath):
-                    msg = (
-"Reasons your templates/ directory may be missing from this list:\n\n"
-"1. The templates/ directory hasn't been created yet.\n"
-"2. The templates/ directory is not one of the subdirectories in the\n"
-"   directory tree in which this script was run.\n"
-"3. The directory holding your template files is called something other\n"
-"   than 'templates'\n\n"
-                    )
-                    print(msg)
-                    input("\nPress any key to exit.\n")
-                    sys.exit("FileNotFoundError: User exit.")
+    --- RETURNS ---
+    out : list
+        The flattened output list.
 
-                # If user enters integer not in list
-                else:
-                    print(f"\n'{q}' is not an option. Try again.\n")
+    None : NoneType
+        Returns None if input is not a list.
 
-            # If user enters something other than an integer
-            except ValueError:
-                print(f"\n'{q}' is not an option. Try again.\n")
+    """
+    if type(listarg) != list:
+        return None
 
-    # If no "templates/" directory is found
-    elif len(templatepath) == 0:
-        sys.exit("FilelNotFoundError: No templates/ folder detected.")
+    out = [item for sublist in listarg for item in sublist]
+    return out
 
-    else:
-        return templatepath
 
-def make_inp_template(filepath,templatetype):
+
+def remove_whitespace(listarg):
+    """ Removes all whitespace from items in a list:
+    ['\\t foo \\n bar', '\\t biz \\n baz'] --> ['foobar', 'bizbaz']
+
+    --- PARAMETERS ---
+    listarg : list
+        The input list containing list items with whitespace
+
+    --- RETURNS ---
+    out : list
+        The output list with all whitespace removed.
+
+    None : NoneType
+        Returns None if input is not a list.
+
+    """
+    if type(listarg) != list:
+        return None
+
+    out = ["".join(item.split()) for item in listarg]
+    return out
+
+
+
+def remove_duplicate_items(listarg):
+    """ Removes duplicate items from a list: 
+    [1, 1, 2, 3] --> [1, 2, 3]
+
+    --- PARAMETERS ---
+    listarg : list
+        The input list containing duplicate values.
+
+    --- RETURNS ---
+    out : list
+        The output list containing unique values only.
+
+    None : NoneType
+        Returns None if input is not a list.
+
+    """
+    if type(listarg) != list:
+        return None
+
+    out = list(dict.fromkeys(listarg))
+    return out
+
+
+
+def remove_empty_items(listarg):
+    """ Removes empty items from a list: 
+    ['1', '', '2', '3'] --> ['1', '2', '3']
+
+    --- PARAMETERS ---
+    listarg : list
+        The input list containing empty values.
+
+    --- RETURNS ---
+    out : list
+        The output list with all empty list values removed.
+
+    None : NoneType
+        Returns None if input is not a list.
+
+    """
+    if type(listarg) != list:
+        return None
+
+    out = [item for item in listarg if "" is not item]
+    return out
+
+
+
+def convert_item_type(listarg,convert):
+    """ Converts list item types between str <--> int <--> float:
+    ['1', '2', '3'] <--> [1, 2, 3] <--> [1.0, 2.0, 3.0]
+
+    --- PARAMETERS ---
+    listarg : list
+        The input list containing items of an undesirable type.
+
+    --- RETURNS ---
+    out : list
+        The output list containing items of the new type.
+
+    None : NoneType
+        Returns None if input is not a list, or if function is unable
+        to convert all list items to new type.
+
+    """
+    if type(listarg) != list:
+        return None
+
+    try:
+        if convert == 'str':
+            out = [str(item) for item in listarg]
+        elif convert == 'int':
+            out = [int(item) for item in listarg]
+        else:
+            out = [float(item) for item in listarg]
+        return out
+
+    except ValueError:
+        return None
+
+
+def display_items(listarg):
+    """ Displays all numbered items in a list.
+
+    --- PARAMETERS ---
+    listarg : list
+        The input list containing items of an undesirable type.
+
+    """
+    if type(listarg) != list:
+        return None
+
+    for i,item in enumerate(listarg):
+        print(str(i+1) + ":", listarg[i])
+    return None
+
+def get_user_selections():
+    """ After displaying a list of numbered options to the user, for
+    instance a list of files detected by a script, this function
+    prompts the user to select n number of the given options, and
+    processes the user input to yield a list containing each number
+    explicity listed.
+
+    --- RETURNS ---
+    out : list
+        List containing each number selection made by the user. List
+        items are string type.
+
+    None : NoneType
+        Returns None if the user input is invalid.
+
+    """
+    msg = (
+        "Please make your selection(s) below.\n\n"
+        "Note: Entry should contain integers and delimiters only.\n"
+        "      Spaces not required.\n\n"
+        "Delimiter : comma ',' (Denotes separate entries)\n"
+        "Optional  : dash  '-' (Denotes a range of entries)\n\n"
+        "Example user input: 1, 3-6, 9\n"
+    )
+    print(msg)
+    rawinput = input("Enter selection here: ")
+
+    # Check if user input is valid
+    validinput = re.search(r"^[\s0-9,-]+$",rawinput)
+    if not validinput:
+        print("Error: User input not valid.\n")
+        return None
+
+    # Delimits by commas, removes whitespace, and removes empty items
+    processinput = rawinput.split(',')
+    processinput = remove_whitespace(processinput)
+    processinput = remove_empty_items(processinput)
+
+    # Separate valid ranges from invalid ranges and single selections
+    validranges = [
+        item for item in processinput if "-" in item
+        and item.count('-') == 1
+        and not item.startswith('-')
+        and not item.endswith('-')
+    ]
+
+    # Separate single selections
+    selections = [int(item) for item in processinput if "-" not in item]
+
+    # Prepare output list and append single selections to it
+    out = []
+    out.append(selections)
+
+    # Process valid ranges if detected
+    if len(validranges) > 0:
+        # Sublist(s) in "parsed" contain start and end of each range
+        parsed = []
+        for i in range(len(validranges)):
+            parsed.append(validranges[i].split("-"))
+
+        # Sublist(s) in interpolated contain each value in a range 
+        # explcitly listed
+        interpolated = []
+        for i in range(len(parsed)):
+            startindex = int(parsed[i][0])
+            endindex = int(parsed[i][1]) + 1
+            interpolated.append(list(range(startindex,endindex)))
+
+        # Flatten and append ranges to the output list
+        ranges = flatten_list(interpolated)
+        out.append(ranges)
+
+    # Clean up output list
+    out = flatten_list(out)
+    out.sort()
+    out = remove_duplicate_items(out)
+    out = convert_item_type(out,'int')
+    return out
+
+
+
+def make_inp_template(savepath,calculation):
     """ Writes the template_{}.inp file. Best practice: write 
     template_{}.inp to a directory called "templates/". Returns None.
 
     --- PARAMETERS ---
-    filepath : string
+    savepath : string
         Path to the relevant template_{}.inp file
 
-    templatetype : string
+    calculation : string
         One of six key strings designating the type of .inp file
         Acceptable options:
         opt     - [DFT] geometry optimization
@@ -218,71 +347,88 @@ def make_inp_template(filepath,templatetype):
         resp    - [MD]  electrostatic potential single point calculation
 
     """
-    if templatetype == "opt":
+    validcalculation = True
+
+    if calculation == "opt":
         contents = (
             "#P B3LYP/6-311++G(2d,2p) opt(tight,MaxCycles=1000) scf(tight,MaxCycles=1000)\n\n"
             "Gaussian09 geometry optimization at B3LYP/6-311++G(2d,2p)\n\n"
         )
-    elif templatetype == "hf":
+
+    elif calculation == "hf":
         contents = (
             "#P HF/6-31G* opt(tight,MaxCycles=1000) scf(tight,MaxCycles=1000)\n\n"
             "Gaussian09 geometry optimization at HF/6-31G*\n\n"
         )
-    elif templatetype == "freq":
+
+    elif calculation == "freq":
         contents = (
             "#P B3LYP/6-311++G(2d,2p) Freq(HPModes) scf(tight,MaxCycles=1000)\n\n"
             "Gaussian09 harmonic vibrational frequency calculation at B3LYP/6-311++G(2d,2p)\n\n"
         )
-    elif templatetype == "anharm":
+
+    elif calculation == "anharm":
         contents = (
             "#P B3LYP/6-311++G(2d,2p) Freq(Anharmonic) scf(tight,MaxCycles=1000)\n\n"
             "Gaussian09 anharmonic vibrational frequency calculation at B3LYP/6-311++G(2d,2p)\n\n"
         )
-    elif templatetype == "geom":
+
+    elif calculation == "geom":
         contents = (
             "#P HF/6-31G* opt(tight,MaxCycles=1000) scf(tight,MaxCycles=1000)\n\n"
             "Gaussian09 geometry optimization at HF/6-31G*\n\n"
         )
-    elif templatetype == "resp":
+
+    elif calculation == "resp":
         contents = (
             "#P B3LYP/c-pVTZ scf(tight,MaxCycles=1000) Pop=MK IOp(6/33=2,6/41=10,6/42=17)\n\n"
             "Gaussian09 single point electrostatic potential calculation at B3LYP/c-pVTZ\n\n"
         )
+
     else:
+        validcalculation = False
         contents = (
             "#P [functional]/[basisset] [calculation type]\n\n"
             "Gaussian09 [calculation type] at [functional]/[basisset]\n\n"
         )
 
     try:
-        with open(filepath, "w") as f:
+        with open(savepath, "w") as f:
             f.write("%NProcShared=14\n")
             f.write("%mem=12GB\n")
-            f.write(f"%rwf=/tmp/template_{templatetype}/,-1\n")
-            f.write(f"%chk=/tmp/template_{templatetype}/template_{templatetype}.chk\n\n")
+
+            if validcalculation == False:
+                f.write(f"%rwf=/tmp/[molecule]_[calculation type]/,-1\n")
+                f.write(f"%chk=/tmp/[molecule]_[calculation type]/[molecule]_[calculation type].chk\n\n")
+
+            else:
+                f"%rwf=/tmp/[molecule]_{calculation}/,-1\n"
+                f"%chk=/tmp/[molecule]_{calculation}/[molecule]_{calculation}.chk\n\n"
+
             f.write(contents)
             f.write("0 1\n")
-        return None
 
     except FileNotFoundError:
         msg = (
-            f"\nFileNotFoundError: Unable to complete path to {filepath}\n"
-            f"Aborting template_{templatetype}.inp file creation.\n"
+            f"\nFileNotFoundError: Unable to complete path to {savepath}\n"
+            f"Aborting {savepath} file creation.\n"
         )
         print(msg)
+
+    finally:
         return None
 
 
 
-def make_pbs_template(filepath,templatetype):
+def make_pbs_template(savepath,calculation):
     """ Writes the template_{}.pbs file. Best practice: write
-    template_{}.pbs to a directory called "templates/". Returns None.
+    template_{}.pbs to a directory called "templates/".
     
     --- PARAMETERS ---
-    filepath : string
+    savepath : string
         Path to the relevant template_{}.pbs file
     
-    templatetype : string
+    calculation : string
         One of six key strings designating the type of .inp file
         Recognized options:
         opt     - [DFT] geometry optimization
@@ -292,15 +438,25 @@ def make_pbs_template(filepath,templatetype):
         geom    - [MD]  geometry optimization (error minimization)
         resp    - [MD]  electrostatic potential single point calculation
 
+    --- RETURNS ---
+    None : NoneType
+
     """
-    if templatetype == "anharm":
+    if calculation == "anharm":
         partition = "long"
         ntasks = "28"
-        walltime = "14"
-    else:
+        walltime = "14-00:00:00"
+
+    elif calculation in ['opt','hf','freq','geom','resp']:
         partition = "short"
         ntasks = "14"
-        walltime = "1"
+        walltime = "1-00:00:00"
+
+    else:
+        calculation = '[calculation type]'
+        partition = '[partition type]'
+        ntasks = '0'
+        walltime = '0-00:00:00'
 
     contents = (
          "#!/bin/bash\n\n"
@@ -308,42 +464,87 @@ def make_pbs_template(filepath,templatetype):
         f"#SBATCH --partition={partition}\n"
          "#SBATCH --nodes=1 ### 14 cores per CPU, 2 CPU per node\n"
         f"#SBATCH --ntasks-per-node={ntasks} ### Number of MPI processes\n"
-        f"#SBATCH --time={walltime}-00:00:00\n"
+        f"#SBATCH --time={walltime}\n"
          "#SBATCH --export=ALL\n"
-        f"#SBATCH --error=template_{templatetype}.err\n\n"
-        f"test -d /tmp/template_{templatetype} || mkdir -v /tmp/template_{templatetype}\n\n"
+        f"#SBATCH --error=[molecule]_{calculation}.err\n\n"
+        f"test -d /tmp/[molecule]_{calculation} || mkdir -v /tmp/[molecule]_{calculation}\n\n"
          "module load intel-mpi\n"
          "module load mkl\n"
          "module load gaussian\n\n"
          "which g09\n\n"
-        f"g09 < template_{templatetype}.inp > template_{templatetype}.out\n\n"
-        f"cp -pv /tmp/template_{templatetype}/template_{templatetype}.chk .\n\n"
-        f"rm -rv /tmp/template_{templatetype}\n\n"
+        f"g09 < [molecule]_{calculation}.inp > [molecule]_{calculation}.out\n\n"
+        f"cp -pv /tmp/[molecule]_{calculation}/[molecule]_{calculation}.chk .\n\n"
+        f"rm -rv /tmp/[molecule]_{calculation}\n\n"
     )
 
     try:
-        with open(filepath, "w") as f:
+        with open(savepath, "w") as f:
             f.write(contents)
-        return None
 
     except FileNotFoundError:
         msg = (
-            f"\nFileNotFoundError: Unable to complete path to {filepath}\n"
-            f"Aborting template_{templatetype}.pbs file creation.\n"
+            f"\nFileNotFoundError: Unable to complete path to {savepath}\n"
+            f"Aborting [molecule]_{calculation}.pbs file creation.\n"
+        )
+        print(msg)
+
+    finally:
+        return None
+
+
+
+def get_coords_from_xyz(xyzpath):
+    """ Loads atom identities and coordinates from files ending in .xyz
+    into a list.
+
+    --- PARAMETERS ---
+    xyzpath : string
+        Path to the relevant .xyz file
+
+    --- RETURNS ---
+    coords : list
+        List of sublists, where each list item is a line from the .xyz
+        file, and each sublist (line) has four items:
+        1. atomic identity
+        2. x coordinate
+        3. y coordinate
+        4. z coordinate
+
+    None : NoneType
+        Returns this if unsuccessful in accessing .xyz file
+
+    """
+    coords = []
+    try:
+        with open(xyzpath, "r") as xyz:
+            for line in xyz:
+                lines = line.split()
+                coords.append(lines)
+
+    except FileNotFoundError:
+        msg = (
+        f"\nFileNotFoundError: Cannot open {xyzpath}\n"
+        "Cannot retrieve molecular coordinates.\n"
         )
         print(msg)
         return None
 
+    else:
+        # Removes the first two header lines of the xyz file 
+        del coords[0]
+        del coords[0]
 
-def custom_FNFerror():
-    msg = (
+        # Removes any lines without exactly four items (atom, x, y, z)
+        for i in range(len(coords)):
+            if len(coords[i]) != 4:
+                del coords[i]
 
-    )
-    print(msg)
-    return None
+    finally:
+        return coords
 
 
-def make_inp_file(templatepath, xyzpath, savepath, conf, inptype):
+
+def make_file(templatepath, savepath, conf, inp, xyzpath):
     """ Creates the .inp file, using the information from a
     template_{}.inp file, and the molecular coordinates from a .xyz
     file. Returns None.
@@ -352,137 +553,74 @@ def make_inp_file(templatepath, xyzpath, savepath, conf, inptype):
     templatepath : string
         Path to the relevant template_{}.inp file
 
+    savepath : string
+        Full path to save new .inp file
+
+    conf : string
+        Three letter residue prefix + integer (conformer index number)
+
+    inp : boolean
+        True --> if building a .inp file
+        False --> if building a .pbs file
+
     xyzpath : string
         Path to the relevant .xyz file containing the molecular 
         coordinates for the molecule
 
-    savepath : string
-        Full path to save new .inp file
-
-    conf : string
-        Three letter residue prefix + integer (conformer index number)
-
-    filetype : string
-        One of six key strings designating the type of .inp file
-        Recognizable options:
-        opt     - [DFT] geometry optimization
-        hf      - [DFT] geometry optimization (error minimization)
-        freq    - [DFT] gas phase vibrational mode calculation
-        anharm  - [DFT] gas phase vibrational anharmonics calculation
-        geom    - [MD]  geometry optimization (error minimization)
-        resp    - [MD]  electrostatic potential single point calculation
-
     """
-    # Copies information from template file to actual .inp file
+    lines = []
+
     try:
-        with open(templatepath, "r") as template,\
-             open(savepath, "w") as f:
+        # Loads template file into memory - writing conformer
+        # designation in where necessary.
+        with open(templatepath, "r") as template:
             for line in template:
+                if "[molecule]" in line:
+                    line = line.replace("[molecule]", conf)
+                lines.append(line)
+
+    except FileNotFoundError:
+        msg = (
+            f"\nFileNotFoundError: Cannot open {templatepath}\n\n"
+            f"Aborting creation of {savepath}\n"
+        )
+        print(msg)
+        return None
+
+    try:
+        # Writes template file lines from memory into file
+        with open(savepath, "w") as f:
+            for line in lines:
                 f.write(line)
 
     except FileNotFoundError:
         msg = (
-            f"\nFileNotFoundError: Cannot open {templatepath}\n"
-            f"Aborting {savepath} file creation...\n"
+            f"\nFileNotFoundError: Cannot open {savepath}\n\n"
+            f"Aborting creation of {savepath}\n"
         )
         print(msg)
         return None
 
-    # Replaces place holders from template with conformer designations 
-    # NOTE: Not working yet - need to split line by everything and anything
-    # except for alphanumeric characters
-    with open(savepath, "r+") as f:
-        for line in f:
-            if "template" in line:
-                line.replace("template",conf)
+    # Do if .inp file - ignore if .pbs file
+    if inp:
+        coords = get_coords_from_xyz(xyzpath)
 
-    # Loads the molecular geometry into a list called "coords"
-    try:
-        coords = []
-        with open(xyzpath, "r") as cartesiancoords:
-            for line in cartesiancoords:
-                lines = line.split()
-                coords.append(lines)
+        if coords == None:
+            print(f"Aborting creation of {savepath}\n")
+            os.remove(savepath)
+            return None
 
-    except FileNotFoundError:
-        msg = (
-            f"\nFileNotFoundError: Cannot open {xyzpath}\n"
-            f"Aborting {savepath} file creation...\n"
-        )
-        print(msg)
-        os.remove(out)
-        return None
+        # Appends the formatted molecular coordinates to the .inp file
+        with open(savepath, "a") as f:
+            for i in range(0,len(coords)):
+                a = format(coords[i][0],"<3s")
+                x = format(float(coords[i][1]),"15.5f")
+                y = format(float(coords[i][2]),"15.5f")
+                z = format(float(coords[i][3]),"15.5f")
+                f.write(f"{a}{x}{y}{z}\n")
+            f.write("\n\n")
 
-    # Removes the first two header lines of the xyz file 
-    del coords[0]
-    del coords[0]
-
-    # Removes any lines without exactly four items (atom, x, y, z coords)
-    for i in range(len(coords)):
-        if len(coords[i]) != 4:
-            del coords[i]
-
-    # Appends the formatted molecular coordinates to the .inp file
-    with open(savepath, "a") as f:
-        for i in range(0,len(coords)):
-            a = format(coords[i][0],"<3s")
-            x = format(float(coords[i][1]),"15.5f")
-            y = format(float(coords[i][2]),"15.5f")
-            z = format(float(coords[i][3]),"15.5f")
-            f.write(f"{a}{x}{y}{z}\n")
-        f.write("\n\n")
     return None
-
-
-
-def make_pbs_file(templatepath,savepath,conf,filetype):
-    """ Creates the .pbs submission script for any .inp files.
-    Returns None.
-
-    --- PARAMETERS ---
-    templatepath : string
-        Path to the relevant template_{}.pbs file
-
-    savepath : string
-        Full path to save new .inp file
-
-    conf : string
-        Three letter residue prefix + integer (conformer index number)
-
-    filetype : string
-        One of six key strings designating the type of .pbs file
-        Recognizable options:
-        opt     - [DFT] geometry optimization
-        hf      - [DFT] geometry optimization (error minimization)
-        freq    - [DFT] gas phase vibrational mode calculation
-        anharm  - [DFT] gas phase vibrational anharmonics calculation
-        geom    - [MD]  geometry optimization (error minimization)
-        resp    - [MD]  electrostatic potential single point calculation
-
-    """
-    # Writes template contents to save file
-    try:
-        with open(templatepath, "r") as template,\
-             open(savepath, "w") as f:
-            for line in template:
-                f.write(line)
-
-    except FileNotFoundError:
-        msg = (
-            f"\nFileNotFoundError: Cannot open {templatepath}\n"
-            f"Aborting {savepath} file creation...\n"
-        )
-        print(msg)
-        return None
-
-    # If no exception thrown, all instances of string "template" are
-    # replaces with conformer designation in save file
-    else:
-        with open(savepath, "r+") as f:
-            for line in f:
-                if "template" in line:
-                    line.replace("template",conf)
-        return None
 
 
 
@@ -494,8 +632,11 @@ def check_gaussian_termination(filepath):
         Path to the gaussian .out file
 
     --- RETURNS ---
-    True -> if file terminated normally
-    False -> if file did not terminate normally
+    True : Boolean
+        If file terminated normally
+
+    False : Boolean
+        If file did not terminate normally
 
     """
     # If file contains the string "Normal termination of Gaussian"
@@ -592,7 +733,148 @@ def make_xyz(gaussianpath,outputpath):
 
     return None
 
+def main_menu():
+    """
+
+    """
+    def print_menu():
+
+        title = "GAUSSIAN MENU"
+        formatting = int((78 - len(title)) / 2) * '-'
+        print(formatting, title, formatting, '\n')
+
+        menu = (
+"0. Documentation/Help\n"
+"1. Build template Gaussian input files (.inp).\n"
+"2. Build template Gubmission scripts (.pbs).\n"
+"3. Write batch of Gaussian input files for molecule of interest.\n"
+"4. Write batch of submission scripts for Gaussian input files.\n"
+"5. Submit jobs to Gaussian.\n"
+"6. Check Gaussian output (.out) files for normal termination.\n"
+"7. Pull molecular coordinates from Gaussian output files.\n"
+"8. Pull ___ from Gaussian output files.\n"
+"#. Exit the program.\n"
+        )
+
+        print(menu)
+        print(79 * '-', '\n')
+        return None
+
+    while True:
+        print_menu()
+        choice = input('Enter your choice [1-4]: ')
+        print()
+
+        if choice == '0':
+            print('Under construction')
+            generate_conformers()
+            approximate_lowest_energy_conformers()
+            rename_conformers()
+
+        elif choice == '1':
+            geometryfiles = find_file_paths(".xyz")
+
+            msg = (
+            f"The following {len(geometryfiles)} geometry files were detected:\n"
+            "(Press any key to continue...)\n\n"
+            )
+            input(msg)
+
+            display_items(geometryfiles)
+            bar = {key : item for key, item in enumerate(geometryfiles)}
+
+            q = input("\nEdit list? Enter [y or n]: ")
+
+            if q == 'y':
+                loop = True
+                while loop:
+                    msg = (
+                        "\nSelect files of interest.\n"
+                        "You can decide whether you wish to remove them from the list or keep them after you've selected them.\n"
+                    )
+                    print(msg)
+
+                    selectedfiles =  get_user_selections()
+
+                    def removekeys(d, keys):
+                        copy = dict(d)
+                        for item in keys:
+                            del copy[item]
+                        return copy
+
+                    def keepkeys(d, keys):
+                        copy = dict(d)
+                        out = {key:copy[key] for key in keys if key in copy}
+                        return out 
+
+                    for item in selectedfiles:
+                        bar = removekey(bar, item)
+
+                    msg = (
+                        "\nThe following files were removed: \n")
+                        "(Press any key to continue...)\n\n"
+                    )
+                    input(msg)
+
+                    msg = (
+                        "\nThe following files were kept: \n")
+                        "(Press any key to continue...)\n\n"
+                    )
+                    input(msg)
+
+                    try:
+                        foo = []
+                        for not index in selectedfiles:
+                            foo.append(geometryfiles[index])
+                    except IndexError:
+                        pass
+
+                    print("User selected the following files for removal: \n")
+                    display_items(
+
+            #make_inp_template(savepath, calculation)
+
+        elif choice == '2':
+            make_pbs_template(savepath, calculation)
+
+        elif choice == '3':
+            make_file(templatepath, savepath, conf, True, xyzpath)
+
+        elif choice == '4':
+            make_file(templatepath, savepath, conf, False, xyzpath)
+
+        elif choice == '5':
+            print('Under construction')
+            submit_jobs()
+
+        elif choice == '6':
+            check_gaussian_termination(filepath)
+
+        elif choice == '7':
+            make_xyz(gaussianpath,outputpath)
+
+        elif choice == '8':
+            print('Under construction')
+            pass
+
+        elif choice == '9':
+            print('Under construction')
+            pass
+
+        elif choice == '#':
+            sys.exit('Program halted by user.\n')
+
+        else:
+            input('"{}" is not an option. Try again.\n'.format(choice))
+    return None
+
+
+def main():
+    # build_directory_space()
+    main_menu()
+
 if __name__ == "__main__":
+    main()
 #    foo = get_user_selections()
 #    print(foo)
 #    make_inp_template("opt")

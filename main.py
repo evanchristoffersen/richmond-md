@@ -89,47 +89,24 @@ def build_directory_space():
     work. Note: messing with the generated structure will prevent this
     program from functioning properly.
 
+    --- PARAMETERS ---
+    project : string
+        The head directory/project name.
+    
     """
-    def get_project_name():
-        """ Prompts user for project/main directory name. 
-        
-        """
-        while True:
-            q = input('Enter the name for this project: ')
-            # User must input something
-            if len(q) == 0:
-                print('\nERROR: Project must have a name.\n')
-            # Symbols make for bad directory names
-            elif re.search(r'[^a-zA-Z0-9_-]',q):
-                print('\nERROR: Only alphanumeric, "-", and "_" characters allowed.\n')
-            else:
-                return q
-
-    def build_tree(project):
-        """ Builds the directory tree.
-        
-        --- PARAMETERS ---
-        project : string
-            The head directory/project name.
-        
-        """
-        directorylist = [
-            project,
-            '{}/DFT'.format(project),
-            '{}/DFT/conformer_files'.format(project),
-            '{}/DFT/geometries'.format(project),
-            '{}/DFT/libraries'.format(project),
-            '{}/DFT/templates'.format(project),
-            '{}/MD'.format(project),
-            '{}/MD/geometries'.format(project),
-            '{}/MD/templates'.format(project)]
-        for item in directorylist:
-            try: os.mkdir(item)
-            except FileExistsError: pass
-        return None
-
-    name = get_project_name()
-    build_tree(name)
+    directorylist = [
+        'DFT',
+        'DFT/calculations',
+        'DFT/geometries',
+        'DFT/libraries',
+        'DFT/templates',
+        'MD',
+        'MD/geometries',
+        'MD/templates'
+    ]
+    for item in directorylist:
+        try: os.mkdir(item)
+        except FileExistsError: pass
     return None
 
 def find_file_paths(searchquery, showhidden=False):
@@ -145,6 +122,7 @@ def find_file_paths(searchquery, showhidden=False):
                 else:
                     out = os.path.join(paths, f)
                     searchresults.append(out)
+    searchresults.sort()
     return searchresults
 
 def find_dir_paths(searchquery, showhidden=False):
@@ -160,6 +138,7 @@ def find_dir_paths(searchquery, showhidden=False):
                 else:
                     out = os.path.join(paths, d)
                     searchresults.append(out)
+    searchresults.sort()
     return searchresults
 
 
