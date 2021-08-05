@@ -13,57 +13,191 @@ import shutil # Move files between directories
 import subprocess as sp # Run shell commands
 import sys # Error management
 
-# from main import find_dirpath, build_directory_space
+from main import find_dir_paths
 
 __authors__ = "Evan Christoffersen", "Konnor Jones"
 # __license__
 # __version__
 
+def flatten_list(listarg):
+
+    if type(listarg) != list:
+        return None
+
+    out = [item for sublist in listarg for item in sublist]
+    return out
+
+
+
+def remove_duplicate_items(listarg):
+
+    if type(listarg) != list:
+        return None
+
+    out = list(set(listarg))
+    return out
+
+
+
+def remove_empty_items(listarg):
+
+    if type(listarg) != list:
+        return None
+
+    out = [item for item in listarg if "" is not item]
+    return out
+
+
+
+def convert_item_type(listarg,convert):
+
+    if type(listarg) != list:
+        return None
+
+    try:
+        if convert == 'str':
+            out = [str(item) for item in listarg]
+        elif convert == 'int':
+            out = [int(item) for item in listarg]
+        else:
+            out = [float(item) for item in listarg]
+        return out
+    except ValueError:
+        return None
+
+
+def get_user_selections():
+
+    msg = (
+"Please make your selection(s) below.\n\n"
+"Note: Entry should contain integers and acceptable delimiters only.\n"
+"      Spaces not required. All other non-numeric characters other than\n" 
+"      the delimiters listed below, are invalid and ignored.\n\n"
+"Delimiter : comma ',' (Denotes separate entries)\n"
+"Optional  : dash  '-' (Denotes a range of entries)\n\n"
+"Example input: 1, 3-6, 9 (User has selected items 1, 3, 4, 5, 6, and 9)\n"
+    )
+
+    print(msg)
+    rawinput = input("Enter selection here: ")
+
+    validinput = re.search(r"^[\s0-9,-]+$",rawinput)
+    if not validinput:
+        print("Input not valid!\n")
+        return None
+
+    # Removes whitespace and delimits by commas
+    processinput = rawinput.replace(' ','').split(',')
+    processinput = remove_empty_items(processinput)
+
+    # Separates valid ranged selections for processing
+    validranges = [
+        item for item in processinput if "-" in item
+        and item.count('-') == 1
+        and not item.startswith('-')
+        and not item.endswith('-')
+    ]
+
+    selections = [int(item) for item in processinput if "-" not in item]
+
+    out = []
+
+    if len(validranges) > 0:
+        # Each sublist in "parsed" contains initial and final value of range
+        parsed = []
+        for i in range(len(validranges)):
+            parsed.append(validranges[i].split("-"))
+
+        # Each sublist contains each value of a range explcitly written
+        interpolated = []
+        for i in range(len(parsed)):
+            startindex = int(parsed[i][0])
+            endindex = int(parsed[i][1]) + 1
+            interpolated.append(list(range(startindex,endindex)))
+
+        ranges = flatten_list(interpolated)
+        out.append(ranges)
+
+    out.append(selections)
+    out = flatten_list(out)
+    out = remove_duplicate_items(out)
+    out.sort()
+    out = convert_item_type(out,'str')
+    return out
 
 
 
 
-# def find_template_folder():
-#     # Find all possible subdirectories called "templates/"
-#     templatepath = find_dirpath("templates")
+
+
+# def choose_paths(paths):
+#     
+#     print("Multiple paths detected: \n\n")
 # 
-#     # If more than one "templates/" directory is found allow user to choose
-#     if len(templatepath) > 1:
-#         print("Multiple "templates/" folders detected:\n")
+#     for i,item in enumerate(paths):
+#         print(str(i) + ":", paths[i])
 # 
-#         while True:
-#             # Print all "templates/" directories
-#             for i,item in enumerate(templatepath):
-#                 print(str(i) + ":", templatepath[i])
-#             # Give user option to exit if desired folder not found
-#             print(str(len(templatepath)) + ":", "None of the above.")
-#             q = input(
-#                 "\nChoose the correct "templates/" folder [0-{}]: ".format(
-#                 len(templatepath)))
 # 
-#             # Handling user input
-#             try:
-#                 if int(q) < len(templatepath):
-#                     templatepath = templatepath[int(q)]
-#                     return templatepath
-#                 elif int(q) == len(templatepath):
-#                     print("\nDouble check:\n")
-#                     print("1. Script must be run above the "templates/" folder in the directory tree.")
-#                     print("2. The name of the folder must match the string "templates".")
-#                     input("\nPress any key to exit.\n")
-#                     sys.exit("Exiting program to allow user to correct missing "templates/" error.")
-#                 # If user enters integer not in list
-#                 else:
-#                     print("\n"{}" is not an option. Try again.\n".format(q))        
-#             # If user enters something other than an integer
-#             except ValueError:
-#                 print("\n"{}" is not an option. Try again.\n".format(q))        
 # 
-#     # If no "templates/" directory is found
-#     elif len(templatepath) == 0:
-#         sys.exit("No templates/ folder detected.")
-#     else:
-#         return templatepath
+#         print(str(len(paths)) + ":", "None of the above.")
+# 
+# 
+# 
+# def display_paths(
+
+
+def find_template_folder():
+    # Find all possible subdirectories called "templates/"
+    templatepath = find_dirpath("templates")
+
+    # If more than one "templates/" directory is found allow user to choose
+    if len(templatepath) > 1:
+        print("Multiple directories named templates/ detected:\n")
+
+        while True:
+
+            # Print all "templates/" directories
+            for i,item in enumerate(templatepath):
+                print(str(i) + ":", templatepath[i])
+
+            # Give user option to exit if desired folder not found
+            print(str(len(templatepath)) + ":", "None of the above.")
+
+            q = input(f"\nChoose the correct directory [0-{len(templatepath)}]: ")
+
+            # Handling user input
+            try:
+                if int(q) < len(templatepath):
+                    templatepath = templatepath[int(q)]
+                    return templatepath
+
+                elif int(q) == len(templatepath):
+                    msg = (
+"Reasons your templates/ directory may be missing from this list:\n\n"
+"1. The templates/ directory hasn't been created yet.\n"
+"2. The templates/ directory is not one of the subdirectories in the\n"
+"   directory tree in which this script was run.\n"
+"3. The directory holding your template files is called something other\n"
+"   than 'templates'\n\n"
+                    )
+                    print(msg)
+                    input("\nPress any key to exit.\n")
+                    sys.exit("FileNotFoundError: User exit.")
+
+                # If user enters integer not in list
+                else:
+                    print(f"\n'{q}' is not an option. Try again.\n")
+
+            # If user enters something other than an integer
+            except ValueError:
+                print(f"\n'{q}' is not an option. Try again.\n")
+
+    # If no "templates/" directory is found
+    elif len(templatepath) == 0:
+        sys.exit("FilelNotFoundError: No templates/ folder detected.")
+
+    else:
+        return templatepath
 
 def make_inp_template(filepath,templatetype):
     """ Writes the template_{}.inp file. Best practice: write 
@@ -458,5 +592,7 @@ def make_xyz(gaussianpath,outputpath):
 
     return None
 
-# if __name__ == "__main__":
-#     make_inp_template("opt")
+if __name__ == "__main__":
+#    foo = get_user_selections()
+#    print(foo)
+#    make_inp_template("opt")

@@ -132,7 +132,7 @@ def build_directory_space():
     build_tree(name)
     return None
 
-def find_filepath(searchquery, showhidden=False):
+def find_file_paths(searchquery, showhidden=False):
     """
 
     """
@@ -147,7 +147,7 @@ def find_filepath(searchquery, showhidden=False):
                     searchresults.append(out)
     return searchresults
 
-def find_dirpath(searchquery, showhidden=False):
+def find_dir_paths(searchquery, showhidden=False):
     """
 
     """
