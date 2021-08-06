@@ -232,20 +232,57 @@ def convert_item_type(listarg,convert):
         return None
 
 
-def display_items(listarg):
-    """ Displays all numbered items in a list.
+def display_items(datastructure):
+    """ Displays all items in a list or dictionary line by line with
+    numbers.
 
     --- PARAMETERS ---
-    listarg : list
-        The input list containing items of an undesirable type.
+    datastructure : list or dict
+        The input datastructure containing items wish to view.
 
     """
-    if type(listarg) != list:
+    if type(datastructure) == list:
+        for i,item in enumerate(listarg):
+            print(str(i+1) + ":", listarg[i])
+        return None
+    elif type(datastructure) == dict:
+        for key, item in datastructure.items():
+            print(key + ":", item)
+        return None
+    else:
         return None
 
-    for i,item in enumerate(listarg):
-        print(str(i+1) + ":", listarg[i])
-    return None
+
+
+# def display_list_items(listarg):
+#     """ Displays all numbered items in a list.
+# 
+#     --- PARAMETERS ---
+#     listarg : list
+#         The input list containing items wish to view.
+# 
+#     """
+#     if type(listarg) != list:
+#         return None
+# 
+#     for i,item in enumerate(listarg):
+#         print(str(i+1) + ":", listarg[i])
+#     return None
+# 
+# def display_dict_items(dictarg):
+#     """ Displays all items in a dictionary.
+# 
+#     --- PARAMETERS ---
+#     dictarg : dictionary
+#         The input dictionary containing items wish to view.
+# 
+#     """
+#     if type(dictarg) != dict:
+#         return None
+# 
+#     for key,item in enumerate(dictarg):
+#         print(str(i+1) + ":", listarg[i])
+#     return None
 
 def get_user_selections():
     """ After displaying a list of numbered options to the user, for
@@ -733,6 +770,18 @@ def make_xyz(gaussianpath,outputpath):
 
     return None
 
+
+def removekeys(d, keys):
+    copy = dict(d)
+    for item in keys:
+        del copy[item]
+    return copy
+
+def keepkeys(d, keys):
+    copy = dict(d)
+    out = {key:copy[key] for key in keys if key in copy}
+    return out 
+
 def main_menu():
     """
 
@@ -773,15 +822,16 @@ def main_menu():
 
         elif choice == '1':
             geometryfiles = find_file_paths(".xyz")
+            geometryfiles = {key : item for key, item in enumerate(geometryfiles)}
 
             msg = (
-            f"The following {len(geometryfiles)} geometry files were detected:\n"
-            "(Press any key to continue...)\n\n"
+            f"{len(geometryfiles)} geometry files were detected:\n"
+            "(Press any key to view detected files...)\n\n"
             )
             input(msg)
 
             display_items(geometryfiles)
-            bar = {key : item for key, item in enumerate(geometryfiles)}
+
 
             q = input("\nEdit list? Enter [y or n]: ")
 
@@ -790,47 +840,36 @@ def main_menu():
                 while loop:
                     msg = (
                         "\nSelect files of interest.\n"
-                        "You can decide whether you wish to remove them from the list or keep them after you've selected them.\n"
                     )
                     print(msg)
 
                     selectedfiles =  get_user_selections()
 
-                    def removekeys(d, keys):
-                        copy = dict(d)
-                        for item in keys:
-                            del copy[item]
-                        return copy
+                    innerloop = True
+                    while innerloop:
+                        q = input('Keep or remove? Enter [keep or remove]: ')
+                        if q == 'keep':
+                            bar = keepkeys(bar, selectedfiles)
 
-                    def keepkeys(d, keys):
-                        copy = dict(d)
-                        out = {key:copy[key] for key in keys if key in copy}
-                        return out 
+                        elif q == 'remove':
+                            bar = removekeys(bar, selectedfiles)
 
-                    for item in selectedfiles:
-                        bar = removekey(bar, item)
+                        else:
+                            print("Not an option.")
 
                     msg = (
-                        "\nThe following files were removed: \n")
+                        "\nThe following files were removed: \n"
                         "(Press any key to continue...)\n\n"
                     )
                     input(msg)
+                    print(bar)
 
                     msg = (
-                        "\nThe following files were kept: \n")
+                        "\nThe following files were kept: \n"
                         "(Press any key to continue...)\n\n"
                     )
                     input(msg)
-
-                    try:
-                        foo = []
-                        for not index in selectedfiles:
-                            foo.append(geometryfiles[index])
-                    except IndexError:
-                        pass
-
-                    print("User selected the following files for removal: \n")
-                    display_items(
+                    print(bar)
 
             #make_inp_template(savepath, calculation)
 
